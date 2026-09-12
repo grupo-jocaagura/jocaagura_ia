@@ -7,7 +7,7 @@ on:
     branches: [develop, master]
   workflow_dispatch:
   schedule:
-    - cron: '0 1 * * 1'  # Ejecución semanal (lunes a la 1 am)
+    - cron: '0 1 * * 1'  # Run weekly on Mondays at 01:00 UTC.
 
 jobs:
   analyze:
