@@ -40,7 +40,7 @@ final class ModelAiState {
   /// Current lifecycle status; installed differs from ready.
   final EnumAiModelStatus status;
 
-  /// Finite progress in [0, 1]; null means no measurable progress.
+  /// Finite progress in `[0, 1]`; null means no measurable progress.
   final double? progress;
 
   /// Present if and only if status is failed.

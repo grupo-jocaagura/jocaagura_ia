@@ -1,8 +1,8 @@
-name: jocaagura_ai
+name: jocaagura_ia
 description: >-
   Pure Dart domain contracts for local AI inference and model lifecycle management,
   with immutable JSON models and runtime-independent interfaces.
-version: 0.0.2
+version: 0.1.0
 repository: https://github.com/grupo-jocaagura/jocaagura_ia
 
 environment:

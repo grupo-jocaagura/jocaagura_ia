@@ -1,5 +1,9 @@
 # Local inference POC evidence
 
+Historical evidence for issue #5 uses the then-current unpublished
+`jocaagura_ai` name. Release 0.1.0 restores the published `jocaagura_ia` identity;
+this document does not claim the real inference experiment was rerun.
+
 Issue: [#5](https://github.com/grupo-jocaagura/jocaagura_ia/issues/5).
 Implementation is based on `d45c8b79897e76776604ebbefd0575fc640d2185` (`develop`).
 No release or additional bump is made.

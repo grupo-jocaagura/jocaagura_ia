@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:jocaagura_ai/jocaagura_ai.dart';
 import 'package:jocaagura_ai_server/src/application/poc_application.dart';
+import 'package:jocaagura_ia/jocaagura_ia.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
 
 Future<void> main(List<String> args) async {

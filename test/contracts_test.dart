@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:jocaagura_ai/jocaagura_ai.dart';
+import 'package:jocaagura_ia/jocaagura_ia.dart';
 import 'package:test/test.dart';
 
 /// Test-only simulation: does not acquire files or execute inference.

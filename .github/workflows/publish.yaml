@@ -8,15 +8,29 @@ permissions:
   contents: read
 
 concurrency:
-  group: publish-${{ github.ref }}
+  group: pub-dev-release
   cancel-in-progress: false
 
 jobs:
   release_validation:
     name: Validate release
+    permissions:
+      contents: read
+      pull-requests: read
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    outputs:
+      state: ${{ steps.eligibility.outputs.state }}
     steps:
+      - name: Require a human-pushed tag while CP-0 is pending
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_TYPE: ${{ github.ref_type }}
+          SENDER_TYPE: ${{ github.event.sender.type }}
+        run: |
+          test "$EVENT_NAME" = push
+          test "$REF_TYPE" = tag
+          test "$SENDER_TYPE" = User
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
@@ -25,6 +39,14 @@ jobs:
         run: |
           set -euo pipefail
           git merge-base --is-ancestor HEAD origin/master
+      - name: Check release eligibility and merged PR provenance
+        id: eligibility
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          python3 -m pip install --disable-pip-version-check -r .github/scripts/requirements.txt
+          python3 .github/scripts/release_policy.py --tag "$RELEASE_TAG" --commit "$(git rev-parse HEAD)"
       - name: Validate tag and changelog
         env:
           RELEASE_TAG: ${{ github.ref_name }}
@@ -43,7 +65,8 @@ jobs:
 
   publish:
     name: Publish to pub.dev
-    needs: ci
+    needs: [ci, release_validation]
+    if: needs.release_validation.outputs.state == 'ready_for_human_tag'
     permissions:
       contents: read
       id-token: write
@@ -51,7 +74,11 @@ jobs:
 
   github_release:
     name: Create GitHub release
-    needs: publish
+    needs: [release_validation, ci, publish]
+    if: >-
+      always() && needs.ci.result == 'success' &&
+      (needs.publish.result == 'success' ||
+       (needs.release_validation.outputs.state == 'already_published' && needs.publish.result == 'skipped'))
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -69,7 +96,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+          existing="$(gh release list --json tagName --limit 1000)"
+          if jq -e --arg tag "$RELEASE_TAG" 'any(.[]; .tagName == $tag)' <<< "$existing" >/dev/null; then
             gh release edit "$RELEASE_TAG" --notes-file "$RUNNER_TEMP/release-notes.md"
           else
             gh release create "$RELEASE_TAG" --verify-tag \

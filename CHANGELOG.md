@@ -14,6 +14,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.1.0] - 2026-09-12
+
+### Fixed
+
+- Restore `jocaagura_ia` as the canonical package and public library name to match
+  the first published package and its repository metadata (issue #8).
+- Escape the progress interval in Dartdoc so it is not treated as a link.
+
+### Added
+
+- Validate release PR provenance, package identity, changelog and pub.dev version
+  eligibility before integration into `master`.
+- Make human-tag publication retries skip versions already published, while
+  rejecting regressions, inconsistent metadata and invalid release provenance.
+- Record CP-0 evidence and keep automatic post-merge orchestration unimplemented
+  until tag-ref workflow dispatch is verified against the live pub.dev settings.
+
+### Changed
+
+- Prepare the SDK-only domain for 0.1.0; the separate inference server, model
+  resources and native runtime remain outside the root package archive.
+
 ## [0.0.2] - 2026-09-12
 
 ### Changed

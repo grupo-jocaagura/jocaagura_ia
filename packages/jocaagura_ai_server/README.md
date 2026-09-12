@@ -1,6 +1,6 @@
 # Jocaagura AI server POC
 
-A nonpublishable, pure Dart integration consumer of `jocaagura_ai`. The server
+A nonpublishable, pure Dart integration consumer of `jocaagura_ia`. The server
 owns HTTP, composition and the concrete `LocalAiGateway`. The core package has
 no dependency on this server, Flutter, llamadart or HTTP.
 
