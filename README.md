@@ -8,7 +8,7 @@ Pure Dart domain contracts for local AI inference and model lifecycle management
 
 ## Description
 
-`jocaagura_ia` aims to provide a shared domain API for running AI models inside the application.
+`jocaagura_ai` aims to provide a shared domain API for running AI models inside the application.
 
 Business logic will interact with Jocaagura-owned requests, responses, model descriptors, and lifecycle states. Adapters will handle the integration with the inference engine, runtime, model format, and local model files.
 
@@ -24,7 +24,7 @@ The approach includes:
 
 ## Project status
 
-**Domain release candidate `0.1.0`. The first published version is `0.0.1`.**
+**Domain release candidate `0.1.0`. The first published `jocaagura_ai` version is `0.0.2`.**
 
 The package provides ten immutable `ModelAi*` data models, six `EnumAi*` enums,
 `AiResult<T>` variants, and the `AiGateway` / `AiModelManager` interfaces.
@@ -43,7 +43,7 @@ future work. See the [POC evidence](doc/local_inference_poc.md) for tested scope
 Dart / Flutter Application
           │
           ▼
-     jocaagura_ia
+     jocaagura_ai
      ├── AiGateway ─────────► Local inference adapter
      │                                │
      │                                ▼
@@ -103,7 +103,7 @@ generation. HTTP and direct smoke commands use the same embedded adapter.
 
 Support for each platform, format, modality, backend, and hardware accelerator will only be documented after it has been tested.
 
-Compatibility claimed by an upstream inference engine does not automatically constitute verified support by `jocaagura_ia`.
+Compatibility claimed by an upstream inference engine does not automatically constitute verified support by `jocaagura_ai`.
 
 The architecture may later support optional remote adapters.
 
@@ -136,7 +136,7 @@ dart test
 
 ```dart
 import 'dart:convert';
-import 'package:jocaagura_ia/jocaagura_ia.dart';
+import 'package:jocaagura_ai/jocaagura_ai.dart';
 
 final ModelAiRequest request = ModelAiRequest(
   requestId: 'request-1',
@@ -162,10 +162,10 @@ Every model provides `fromJson`, `toJson`, `copyWith`, value equality, and
 immutable collections. Explicit null clears nullable fields in `copyWith`;
 omitting an argument preserves it. Unknown measurements remain null, not zero.
 
-Run the [fixture example](example/jocaagura_ia_example.dart) with:
+Run the [fixture example](example/jocaagura_ai_example.dart) with:
 
 ```sh
-dart run example/jocaagura_ia_example.dart
+dart run example/jocaagura_ai_example.dart
 ```
 
 The example demonstrates serialization and result handling; it performs no real
@@ -174,9 +174,8 @@ for the local model POC. Package publication remains a separate release step.
 
 ### Package migration
 
-The published package keeps the canonical name `jocaagura_ia`. If you used the
-unpublished `jocaagura_ai` checkout, switch its dependency and imports back to
-`package:jocaagura_ia/jocaagura_ia.dart`. No domain JSON changes are required.
+Change the dependency name from `jocaagura_ia` to `jocaagura_ai` and import
+`package:jocaagura_ai/jocaagura_ai.dart`. No old-name entrypoint shim is provided.
 All public domain type names, enum names and JSON payloads remain unchanged.
 The GitHub repository and Git dependency URL remain
 `https://github.com/grupo-jocaagura/jocaagura_ia`.
@@ -258,6 +257,6 @@ Changes involving model integrations must also document:
 - [Jocaagura Domain](https://github.com/grupo-jocaagura/jocaagura_domain): reference for domain conventions. This package intentionally has no dependency on it.
 - [Candidate inference engine documentation](https://pub.dev/packages/llamadart).
 
-The MIT License applies to the `jocaagura_ia` source code.
+The MIT License applies to the `jocaagura_ai` source code.
 
 Models, inference runtimes, native libraries, and related assets retain their own licenses and distribution terms.

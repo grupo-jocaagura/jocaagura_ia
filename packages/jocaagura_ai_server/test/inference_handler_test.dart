@@ -1,8 +1,8 @@
 import 'dart:convert';
 
+import 'package:jocaagura_ai/jocaagura_ai.dart';
 import 'package:jocaagura_ai_server/src/api/inference_handler.dart';
 import 'package:jocaagura_ai_server/src/application/poc_application.dart';
-import 'package:jocaagura_ia/jocaagura_ia.dart';
 import 'package:shelf/shelf.dart';
 import 'package:test/test.dart';
 

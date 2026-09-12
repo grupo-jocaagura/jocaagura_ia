@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:jocaagura_ia/jocaagura_ia.dart';
+import 'package:jocaagura_ai/jocaagura_ai.dart';
 import 'package:shelf/shelf.dart';
 
 /// HTTP is a transport for the existing domain, not an inference dependency.

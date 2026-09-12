@@ -13,7 +13,7 @@ import yaml
 from release_notes import release_notes
 
 REPOSITORY = "grupo-jocaagura/jocaagura_ia"
-PACKAGE = "jocaagura_ia"
+PACKAGE = "jocaagura_ai"
 REPOSITORY_URL = f"https://github.com/{REPOSITORY}"
 STABLE = re.compile(r"(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)")
 

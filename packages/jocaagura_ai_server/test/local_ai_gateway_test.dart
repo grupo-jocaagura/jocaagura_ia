@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:jocaagura_ai/jocaagura_ai.dart';
 import 'package:jocaagura_ai_server/src/application/poc_application.dart';
 import 'package:jocaagura_ai_server/src/infrastructure/local_ai_gateway.dart';
-import 'package:jocaagura_ia/jocaagura_ia.dart';
 import 'package:llamadart/llamadart.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shelf/shelf.dart';

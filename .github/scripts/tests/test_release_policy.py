@@ -19,7 +19,7 @@ from release_policy import (PACKAGE, REPOSITORY, metadata, publication_state,
                             read_json, require_merged_commit, require_release_pr)
 
 SHA = "a" * 40
-SPEC = "name: jocaagura_ia\nversion: 0.1.0\nrepository: https://github.com/grupo-jocaagura/jocaagura_ia\n"
+SPEC = "name: jocaagura_ai\nversion: 0.1.0\nrepository: https://github.com/grupo-jocaagura/jocaagura_ia\n"
 PR = {
     "base": {"ref": "master", "repo": {"full_name": REPOSITORY}},
     "head": {"ref": "develop", "repo": {"full_name": REPOSITORY}},
@@ -34,7 +34,7 @@ def package(*versions):
 class ReleasePolicyTests(unittest.TestCase):
     def test_canonical_publishable_sdk_only_identity(self):
         self.assertEqual(metadata(SPEC), "0.1.0")
-        cases = [SPEC.replace("name: jocaagura_ia", "name: jocaagura_ai"),
+        cases = [SPEC.replace("name: jocaagura_ai", "name: jocaagura_ia"),
                  SPEC.replace("https://github.com/", "https://invalid.example/"),
                  SPEC + "publish_to: none\n", SPEC + "publish_to: null\n",
                  SPEC + "dependencies:\n  http: any\n",
@@ -47,7 +47,7 @@ class ReleasePolicyTests(unittest.TestCase):
 
     def test_actual_repository_keeps_the_published_name_and_entrypoint(self):
         metadata((ROOT / "pubspec.yaml").read_text(encoding="utf-8"))
-        self.assertTrue((ROOT / "lib/jocaagura_ia.dart").is_file())
+        self.assertTrue((ROOT / "lib/jocaagura_ai.dart").is_file())
         server = yaml.safe_load((ROOT / "packages/jocaagura_ai_server/pubspec.yaml").read_text())
         self.assertEqual(server["publish_to"], "none")
         self.assertEqual(server["dependencies"][PACKAGE], {"path": "../.."})
@@ -56,8 +56,8 @@ class ReleasePolicyTests(unittest.TestCase):
         require_release_pr(PR)
         require_release_pr(PR, merged_sha=SHA)
         for side, key, value in [("base", "ref", "develop"), ("head", "ref", "feature"),
-                                 ("head", "repo", {"full_name": "fork/jocaagura_ia"}),
-                                 ("base", "repo", {"full_name": "fork/jocaagura_ia"})]:
+                                 ("head", "repo", {"full_name": "fork/jocaagura_ai"}),
+                                 ("base", "repo", {"full_name": "fork/jocaagura_ai"})]:
             wrong = deepcopy(PR)
             wrong[side][key] = value
             with self.subTest(side=side, key=key), self.assertRaises(ValueError):
@@ -88,7 +88,7 @@ class ReleasePolicyTests(unittest.TestCase):
                          {"name": PACKAGE, "versions": [{}]}, package("garbage")]:
             with self.subTest(response=response), self.assertRaises(ValueError):
                 publication_state("0.1.0", response)
-        url = "https://pub.dev/api/packages/jocaagura_ia"
+        url = "https://pub.dev/api/packages/jocaagura_ai"
         for status in [401, 403, 429, 500, 503]:
             with patch("release_policy.urlopen", side_effect=HTTPError(url, status, "failure", {}, None)):
                 with self.assertRaises(ValueError):

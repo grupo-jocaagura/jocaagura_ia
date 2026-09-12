@@ -6,9 +6,11 @@ Issue: https://github.com/grupo-jocaagura/jocaagura_ia/issues/8
 
 ## Evidence collected on 2026-09-12 (America/Bogota)
 
-- The live [package API](https://pub.dev/api/packages/jocaagura_ia) reports the
-  manually published `jocaagura_ia` version **0.0.1**. `0.1.0` is the next
-  candidate, not the bootstrap publication.
+- The live [package API](https://pub.dev/api/packages/jocaagura_ai) reports the
+  manually published `jocaagura_ai` version **0.0.2**. `0.1.0` is the next
+  candidate, not the bootstrap publication. The corrected package URL is
+  `https://pub.dev/packages/jocaagura_ai`; its score API reports **160/160**.
+  The repository-mismatch report belongs to the different `jocaagura_ia` package.
 - The [Dart publishing overview](https://dart.dev/tools/pub/automated-publishing)
   still describes publishing as requiring a tag-push trigger.
 - [pub.dev issue 8507](https://github.com/dart-lang/pub-dev/issues/8507) contains
@@ -40,7 +42,7 @@ Issue: https://github.com/grupo-jocaagura/jocaagura_ia/issues/8
 | `sub` | Record the actual subject; it normally represents the repository and tag, or the configured environment |
 | Environment | Record whether required and the exact `environment` claim if enabled |
 | Audit evidence | Record `run_id`, workflow URL, timestamp, event, ref and sanitized result |
-| pub.dev package | `jocaagura_ia` |
+| pub.dev package | `jocaagura_ai` |
 | GitHub publishing | Enabled for the official repository |
 | Tag pattern | `v{{version}}` |
 | Event permission | `workflow_dispatch` explicitly enabled; keep `push` enabled for the human-tag fallback |

@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:jocaagura_ia/jocaagura_ia.dart';
+import 'package:jocaagura_ai/jocaagura_ai.dart';
 import 'package:test/test.dart';
 
 final String sha = List<String>.filled(64, 'a').join();

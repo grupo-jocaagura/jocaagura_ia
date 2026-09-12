@@ -18,9 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Restore `jocaagura_ia` as the canonical package and public library name to match
-  the first published package and its repository metadata (issue #8).
-- Escape the progress interval in Dartdoc so it is not treated as a link.
+- Escape the progress interval in Dartdoc so it is not treated as a link
+  (issue #8).
 
 ### Added
 

@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:jocaagura_ia/jocaagura_ia.dart';
+import 'package:jocaagura_ai/jocaagura_ai.dart';
 import 'package:llamadart/llamadart.dart';
 
 /// One local LiteRT-LM session per request, owned entirely by this adapter.

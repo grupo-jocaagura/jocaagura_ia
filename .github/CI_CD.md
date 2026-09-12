@@ -1,7 +1,7 @@
-# jocaagura_ia CI/CD
+# jocaagura_ai CI/CD
 
-The root package is the SDK-only `jocaagura_ia` domain. Its first manual pub.dev
-release is **0.0.1**; **0.1.0** is the next candidate. The integration consumer
+The root package is the SDK-only `jocaagura_ai` domain. Its first manual pub.dev
+release is **0.0.2**; **0.1.0** is the next candidate. The integration consumer
 `packages/jocaagura_ai_server` remains nonpublishable and excluded by `.pubignore`.
 Release validation needs no running service, model weights or real inference.
 
@@ -22,9 +22,10 @@ dependencies, stable version and changelog, consults pub.dev, and performs
 Other PRs cannot be used to bypass this branch requirement by naming a fork's
 branch `develop`. PR evaluation has no publishing credentials or write access.
 
-Every CI run checks that the root `pubspec.yaml` retains `name: jocaagura_ia`,
+Every CI run checks that the root `pubspec.yaml` retains `name: jocaagura_ai`,
 the official repository URL, a stable version, and no `publish_to` property.
-This prevents the package/repository mismatch that lost 10 pub points.
+This prevents publishing under a different package identity or regressing the
+repository metadata check.
 
 Require pull requests and the `CI result` check on `develop` and `master` in
 GitHub branch rules. Require up-to-date checks, disallow direct/force pushes and
@@ -102,7 +103,7 @@ The supported fallback is a human-pushed tag. Once the release PR has merged:
 2. Fetch `master` and tags. Locate the exact `merge_commit_sha` of the merged
    official release PR, and check out that commit in a clean worktree.
 3. Run release validation/CI and the publication dry run. Review the archive
-   list: it must contain `lib/jocaagura_ia.dart`, the root example, README,
+   list: it must contain `lib/jocaagura_ai.dart`, the root example, README,
    changelog and license; it must exclude `packages/`, models, native runtimes,
    private config, and build/test reports.
 4. Create `v0.1.0` on that exact commit and push that tag explicitly as a human
@@ -124,7 +125,7 @@ an arbitrary ancestor of `master` is insufficient.
 
 ### Recovery and the already-published first version
 
-- `0.0.1` has already been published manually. Do not publish it again, fabricate
+- `0.0.2` has already been published manually. Do not publish it again, fabricate
   a merge provenance for it, or repoint a historical tag. Review the original
   validated commit separately if historical release metadata is needed.
 - If publication fails ambiguously, rerun the **entire workflow** so eligibility
@@ -135,21 +136,25 @@ an arbitrary ancestor of `master` is insufficient.
 - A conflicting tag, invalid source PR, failed CI, or API error requires fixing
   the underlying cause. Never move a release tag or bypass CP-0 as recovery.
 
-## Resolving the pub.dev repository warning
+## pub.dev diagnostics and package identity
 
-The published 0.0.1 metadata points to the official repository. Pana's analysis
-log shows it fetched the default branch, **develop**, whose pubspec had been
-renamed to `jocaagura_ai`. That no longer matched `name: jocaagura_ia` in the
-published archive, producing the 150/160 score.
+The canonical published package is **jocaagura_ai**, first published manually as
+**0.0.2**. Its [score API](https://pub.dev/api/packages/jocaagura_ai/score) reports
+**160/160** points, verified on 2026-09-12. Its repository URL correctly points to
+`grupo-jocaagura/jocaagura_ia`, whose default branch is `develop`; the repository
+name and Dart package name do not need to be identical.
 
-This change restores the published identity and imports, keeps the repository
-URL, and corrects the Dartdoc interval reference. Merge the correction into
-`develop` through its PR so pub.dev can inspect the matching manifest on its
-actual default branch. The existing published version cannot be edited, and
-this metadata correction does not require republishing 0.0.1. After pub.dev
-reanalyzes the package, inspect its score/log to confirm the warning is gone;
-a passing local check does not guarantee the displayed score has refreshed.
+The 150/160 repository-mismatch report belongs to the different published
+`jocaagura_ia` package. Do not rename the canonical package to address that old
+report. Keep `name: jocaagura_ai`, its public entrypoint and imports unchanged.
+
+The current `jocaagura_ai` analysis log still reports an unresolved Dartdoc
+reference for `[0, 1]`. This release escapes that mathematical interval as code.
+Regenerating Dartdoc must report zero warnings and errors. The uploaded 0.0.2
+archive cannot be edited; the documentation correction will reach pub.dev in
+0.1.0 after publication and analysis. Do not claim to have increased points that
+were already at their maximum.
 
 References: [Dart publishing](https://dart.dev/tools/pub/automated-publishing),
 [GitHub token event rules](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow),
-[published analysis log](https://pub.dev/packages/jocaagura_ia/score/log.txt).
+[published analysis log](https://pub.dev/packages/jocaagura_ai/score/log.txt).
