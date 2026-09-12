@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.0.2] - 2026-09-12
+
 ### Changed
 
 - Rename the Dart package and public library to `jocaagura_ai`, including imports,
