@@ -1,0 +1,408 @@
+name: Validate commits & lints
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: base-validation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Base validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - name: Start validation timer
+        id: timer
+        shell: bash
+        run: |
+          echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Check commit signatures
+        id: commits
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if ! command -v jq >/dev/null 2>&1; then
+            sudo apt-get update -y
+            sudo apt-get install -y jq
+          fi
+
+          OWNER="${{ github.repository_owner }}"
+          REPO="${{ github.event.repository.name }}"
+
+          get_commit_shas_push() {
+            local before
+            local after
+
+            before="$(jq -r '.before // empty' "$GITHUB_EVENT_PATH")"
+            after="$(jq -r '.after // empty' "$GITHUB_EVENT_PATH")"
+
+            # Normal push: validate exactly the commits introduced by the push.
+            if [[ -n "$before" && -n "$after" && ! "$before" =~ ^0+$ ]]; then
+              gh api --paginate \
+                "repos/${OWNER}/${REPO}/compare/${before}...${after}?per_page=100" \
+                --jq '.commits[].sha'
+
+              return
+            fi
+
+            # Initial pushes have no base; inspect the full reachable history.
+            # Webhook commit lists can be truncated.
+            if [[ -n "$after" && ! "$after" =~ ^0+$ ]]; then
+              git rev-list "$after"
+              return
+            fi
+
+            return 1
+          }
+
+          get_commit_shas_pull_request() {
+            local base
+            local head
+
+            base="$(
+              jq -r '.pull_request.base.sha // empty' "$GITHUB_EVENT_PATH"
+            )"
+
+            head="$(
+              jq -r '.pull_request.head.sha // empty' "$GITHUB_EVENT_PATH"
+            )"
+
+            if [[ -z "$base" || -z "$head" ]]; then
+              return 1
+            fi
+
+            gh api --paginate \
+              "repos/${OWNER}/${REPO}/compare/${base}...${head}?per_page=100" \
+              --jq '.commits[].sha'
+          }
+
+          case "$GITHUB_EVENT_NAME" in
+            push)
+              SHAS="$(get_commit_shas_push)"
+              ;;
+
+            pull_request)
+              SHAS="$(get_commit_shas_pull_request)"
+              ;;
+
+            workflow_dispatch)
+              SHAS="$(git rev-parse HEAD)"
+              ;;
+
+            *)
+              echo "::error title=Unsupported event::Base validation does not know how to resolve commits for event '${GITHUB_EVENT_NAME}'."
+              exit 1
+              ;;
+          esac
+
+          SHAS="$(
+            printf '%s\n' "$SHAS" \
+              | sed '/^[[:space:]]*$/d' \
+              | sort -u
+          )"
+
+          if [[ -z "${SHAS//[$'\t\r\n ']/}" ]]; then
+            echo "::error title=No commits found::No commits were identified for signature verification."
+            exit 1
+          fi
+
+          fail=false
+          failed_count=0
+          checked_count=0
+
+          while IFS= read -r SHA; do
+            [[ -z "$SHA" ]] && continue
+
+            ((checked_count++)) || true
+
+            if ! RESP="$(
+              curl -sSf \
+                -H "Authorization: Bearer ${GH_TOKEN}" \
+                -H "Accept: application/vnd.github+json" \
+                "https://api.github.com/repos/${OWNER}/${REPO}/commits/${SHA}"
+            )"; then
+              echo "::error title=API error::Failed to fetch commit ${SHA}"
+              fail=true
+              ((failed_count++)) || true
+              continue
+            fi
+
+            VERIFIED="$(
+              printf '%s' "$RESP" \
+                | jq -r '.commit.verification.verified'
+            )"
+
+            REASON="$(
+              printf '%s' "$RESP" \
+                | jq -r '.commit.verification.reason'
+            )"
+
+            if [[ "$VERIFIED" != "true" ]]; then
+              echo "::error title=Unsigned/Unverified commit::${SHA} verified=false (reason=${REASON})"
+              fail=true
+              ((failed_count++)) || true
+            else
+              echo "✓ ${SHA} verified"
+            fi
+          done <<< "$SHAS"
+
+          echo "Checked commits: ${checked_count}"
+
+          echo "checked=${checked_count}" >> "$GITHUB_OUTPUT"
+          echo "failed=${failed_count}" >> "$GITHUB_OUTPUT"
+
+          if [[ "$fail" == "true" ]]; then
+            echo "::error title=Commit signature check failed::${failed_count} commit(s) unsigned or unverified."
+            exit 1
+          fi
+
+      - name: Setup Dart
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: '3.13.2'
+
+      - name: Discover tracked Dart packages
+        id: packages
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          PACKAGE_FILE="${RUNNER_TEMP}/tracked_pubspecs.txt"
+
+          git ls-files \
+            | grep -E '(^|/)pubspec\.yaml$' \
+            | grep -Ev '(^|/)(build|\.dart_tool)/' \
+            > "$PACKAGE_FILE" || true
+
+          if [[ ! -s "$PACKAGE_FILE" ]]; then
+            echo "::error title=No packages found::No tracked pubspec.yaml files were found."
+            exit 1
+          fi
+
+          PACKAGE_COUNT="$(
+            wc -l < "$PACKAGE_FILE" \
+              | tr -d '[:space:]'
+          )"
+
+          echo "count=${PACKAGE_COUNT}" >> "$GITHUB_OUTPUT"
+
+          echo "Tracked packages:"
+
+          while IFS= read -r pubspec; do
+            echo "  - $(dirname "$pubspec")"
+          done < "$PACKAGE_FILE"
+
+          echo "Package count: ${PACKAGE_COUNT}"
+
+      - name: Pub get
+        id: pub_get
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          PACKAGE_FILE="${RUNNER_TEMP}/tracked_pubspecs.txt"
+
+          while IFS= read -r pubspec; do
+            directory="$(dirname "$pubspec")"
+
+            echo ""
+            echo ">> dart pub get: ${directory}"
+
+            (
+              cd "$directory"
+              dart pub get
+            )
+          done < "$PACKAGE_FILE"
+
+      - name: Check dependency_overrides
+        id: overrides
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          PACKAGE_FILE="${RUNNER_TEMP}/tracked_pubspecs.txt"
+
+          found=false
+
+          while IFS= read -r pubspec; do
+            if grep -nE '^[[:space:]]*dependency_overrides:' "$pubspec"; then
+              echo "::error file=${pubspec},title=dependency_overrides detected::Tracked pubspec.yaml must not contain dependency_overrides."
+              found=true
+            fi
+          done < "$PACKAGE_FILE"
+
+          if [[ "$found" == "true" ]]; then
+            exit 1
+          fi
+
+          echo "✓ No dependency_overrides found"
+
+      - name: Reject tracked pubspec overrides
+        shell: bash
+        run: |
+          set -euo pipefail
+          overrides="$(git ls-files -- '**/pubspec_overrides.yaml' 'pubspec_overrides.yaml')"
+          if [[ -n "$overrides" ]]; then
+            echo "::error::Do not commit pubspec_overrides.yaml files."
+            exit 1
+          fi
+
+      - name: Test workflow release logic
+        run: |
+          python3 -m pip install --disable-pip-version-check -r .github/scripts/requirements.txt
+          python3 -m unittest discover -s .github/scripts/tests -v
+
+      - name: Validate GitHub Actions workflows
+        shell: bash
+        run: |
+          set -euo pipefail
+          lint_dir="${RUNNER_TEMP}/actionlint"
+          mkdir -p "$lint_dir"
+          gh release download v1.7.12 --repo rhysd/actionlint \
+            --pattern 'actionlint_1.7.12_linux_amd64.tar.gz' \
+            --pattern 'actionlint_1.7.12_checksums.txt' --dir "$lint_dir"
+          (
+            cd "$lint_dir"
+            sha256sum --check --ignore-missing actionlint_1.7.12_checksums.txt
+            tar -xzf actionlint_1.7.12_linux_amd64.tar.gz
+          )
+          "$lint_dir/actionlint" -shellcheck='' -pyflakes=''
+
+      - name: Enforce dart format
+        id: format
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          dart format \
+            --output=none \
+            --set-exit-if-changed \
+            .
+
+      - name: Dart analyze
+        id: analyze
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          PACKAGE_FILE="${RUNNER_TEMP}/tracked_pubspecs.txt"
+
+          while IFS= read -r pubspec; do
+            directory="$(dirname "$pubspec")"
+
+            echo ""
+            echo ">> dart analyze: ${directory}"
+
+            (
+              cd "$directory"
+
+              dart analyze \
+                --fatal-infos \
+                --fatal-warnings \
+                .
+            )
+          done < "$PACKAGE_FILE"
+
+      - name: Write base validation summary
+        if: always()
+        shell: bash
+        env:
+          JOB_STATUS: ${{ job.status }}
+          STARTED_AT: ${{ steps.timer.outputs.started_at }}
+
+          COMMITS_CHECKED: ${{ steps.commits.outputs.checked }}
+          PACKAGES_CHECKED: ${{ steps.packages.outputs.count }}
+
+          COMMITS_OUTCOME: ${{ steps.commits.outcome }}
+          PUB_GET_OUTCOME: ${{ steps.pub_get.outcome }}
+          OVERRIDES_OUTCOME: ${{ steps.overrides.outcome }}
+          FORMAT_OUTCOME: ${{ steps.format.outcome }}
+          ANALYZE_OUTCOME: ${{ steps.analyze.outcome }}
+
+        run: |
+          set -euo pipefail
+
+          result() {
+            case "${1:-}" in
+              success)
+                printf '✅ PASS'
+                ;;
+              failure)
+                printf '❌ FAIL'
+                ;;
+              cancelled)
+                printf '⚪ CANCELLED'
+                ;;
+              skipped)
+                printf '⏭️ SKIPPED'
+                ;;
+              *)
+                printf 'N/A'
+                ;;
+            esac
+          }
+
+          value_or_na() {
+            local value="${1:-}"
+
+            if [[ -z "$value" ]]; then
+              printf 'N/A'
+            else
+              printf '%s' "$value"
+            fi
+          }
+
+          finished_at="$(date +%s)"
+          duration="N/A"
+
+          if [[ "${STARTED_AT:-}" =~ ^[0-9]+$ ]]; then
+            duration="$((finished_at - STARTED_AT))s"
+          fi
+
+          case "${JOB_STATUS:-}" in
+            success)
+              overall='✅ PASS'
+              ;;
+            failure)
+              overall='❌ FAIL'
+              ;;
+            cancelled)
+              overall='⚪ CANCELLED'
+              ;;
+            *)
+              overall='N/A'
+              ;;
+          esac
+
+          {
+            echo "## Dart Base Validation"
+            echo ""
+            echo "**Status:** ${overall}"
+            echo ""
+            echo "| Check | Result |"
+            echo "| --- | ---: |"
+            echo "| Commits checked | $(value_or_na "${COMMITS_CHECKED:-}") |"
+            echo "| Commit signatures | $(result "${COMMITS_OUTCOME:-}") |"
+            echo "| Packages checked | $(value_or_na "${PACKAGES_CHECKED:-}") |"
+            echo "| Dependencies | $(result "${PUB_GET_OUTCOME:-}") |"
+            echo "| dependency_overrides | $(result "${OVERRIDES_OUTCOME:-}") |"
+            echo "| Dart format | $(result "${FORMAT_OUTCOME:-}") |"
+            echo "| Strict analyze | $(result "${ANALYZE_OUTCOME:-}") |"
+            echo "| Duration | ${duration} |"
+          } >> "$GITHUB_STEP_SUMMARY"

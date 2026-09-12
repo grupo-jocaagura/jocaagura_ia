@@ -1,0 +1,11 @@
+# Package publication excludes repository automation and local build reports.
+.github/
+.dart_tool/
+coverage/
+build/
+pubspec.lock
+.git/
+.gitignore
+.gitattributes
+**/__pycache__/
+**/*.pyc
