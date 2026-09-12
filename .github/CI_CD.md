@@ -23,8 +23,8 @@ variable `COVERAGE_MIN` can only raise the threshold, up to 100. The actual rati
 is compared without rounding. Missing tests or executable lines cause CI to fail.
 Reports are retained for 14 days. Coverage measures the lines in `lib` reported
 by the VM during tests; it does not guarantee that files never loaded are included.
-The initial scaffold has only one executable line, so its 100% coverage does not
-measure future functionality.
+The initial domain suite exercises the public models and result/lifecycle
+contracts. Its coverage does not certify runtime integration or real inference.
 
 CodeQL analyzes the `actions` language: the workflows themselves. It does not
 analyze Dart. It runs on pull requests and pushes to the main branches, and weekly.

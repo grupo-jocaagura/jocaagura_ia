@@ -1,16 +1,12 @@
 name: jocaagura_ia
 description: >-
-  A Dart package in development for local AI in Dart and Flutter applications,
-  with Jocaagura contracts for offline inference and model management.
+  Pure Dart domain contracts for local AI inference and model lifecycle management,
+  with immutable JSON models and runtime-independent interfaces.
 version: 0.0.0
 repository: https://github.com/grupo-jocaagura/jocaagura_ia
 
 environment:
   sdk: ^3.13.2
-
-# Add regular dependencies here.
-dependencies:
-  # path: ^1.9.0
 
 dev_dependencies:
   coverage: ^1.15.1
