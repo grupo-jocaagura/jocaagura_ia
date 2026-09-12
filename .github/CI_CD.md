@@ -99,9 +99,9 @@ para evitar repetir la publicación que ya se realizó.
   publicar de nuevo la misma versión. Los siguientes tags usarán el flujo completo.
 - Restringe la creación/modificación de tags `v*` a los responsables de releases.
 
-El dry-run del bootstrap todavía advertirá que falta la URL del repositorio
-y que `0.0.0` no tiene entrada de release. Son condiciones deliberadas de esta
-fase inicial; el workflow bloquea su publicación.
+El dry-run del bootstrap todavía advertirá que `0.0.0` no tiene entrada de
+release. Es una condición deliberada de esta fase inicial; el workflow bloquea
+su publicación. La URL oficial ya está declarada en `pubspec.yaml`.
 
 Referencias: [publicación automatizada de Dart](https://dart.dev/tools/pub/automated-publishing),
 [eventos y GITHUB_TOKEN](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow),
