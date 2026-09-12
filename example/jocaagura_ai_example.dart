@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:jocaagura_ia/jocaagura_ia.dart';
+import 'package:jocaagura_ai/jocaagura_ai.dart';
 
 /// Demonstrates immutable JSON contracts with a fixture, not real inference.
 void main() {

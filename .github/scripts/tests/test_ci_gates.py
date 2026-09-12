@@ -66,6 +66,25 @@ class WorkflowTests(unittest.TestCase):
                 result = subprocess.run([BASH, "--noprofile", "--norc"], input=script, encoding="utf-8", capture_output=True, env=dict(os.environ, COVERAGE_MIN=threshold))
                 self.assertEqual(result.returncode, expected, result.stdout + result.stderr)
 
+    def test_core_coverage_cannot_hide_an_uncovered_server(self):
+        steps = WORKFLOWS["validate_pr.yaml"]["jobs"]["test_and_coverage"]["steps"]
+        script = next(step["run"] for step in steps if step.get("id") == "coverage")
+        scratch = ROOT / ".dart_tool"
+        scratch.mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix="ci-packages-", dir=scratch) as name:
+            directory = Path(name).resolve()
+            reports = []
+            for package, covered, total in [("core", 1000, 1000), ("server", 0, 10)]:
+                report = directory / f"{package}.info"
+                report.write_text(f"SF:lib/example.dart\nLF:{total}\nLH:{covered}\nend_of_record\n", newline="\n")
+                reports.append(report.as_posix())
+            (directory / "coverage_files.txt").write_text("\n".join(reports) + "\n", newline="\n")
+            output = directory / "output"
+            result = subprocess.run([BASH, "--noprofile", "--norc"], input=script, encoding="utf-8", capture_output=True,
+                                    env=dict(os.environ, RUNNER_TEMP=directory.as_posix(), GITHUB_OUTPUT=output.as_posix(), COVERAGE_MIN="95"))
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("gate=fail\n", output.read_text())
+
     def test_commit_comparisons_paginate_and_fail_on_partial_api_errors(self):
         steps = WORKFLOWS["validate_commits_and_lints.yaml"]["jobs"]["validate"]["steps"]
         source = next(step["run"] for step in steps if step.get("id") == "commits")

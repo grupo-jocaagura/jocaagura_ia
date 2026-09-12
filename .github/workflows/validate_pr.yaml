@@ -339,6 +339,7 @@ jobs:
           total_lines=0
           covered_lines=0
           coverage_files=0
+          package_coverage_failed=false
 
           if [[ -f "$COVERAGE_FILE_LIST" ]]; then
             while IFS= read -r coverage_file; do
@@ -359,6 +360,14 @@ jobs:
                   END { print total + 0 }
                 ' "$coverage_file"
               )"
+
+              # A well-covered core must not hide an untested consumer package.
+              if ! awk -v covered="$file_covered" -v total="$file_total" \
+                -v required="$COVERAGE_MIN" \
+                'BEGIN { exit !(total > 0 && covered * 100 >= required * total) }'; then
+                echo "::error::Package coverage below threshold: $coverage_file"
+                package_coverage_failed=true
+              fi
 
               total_lines=$((total_lines + file_total))
               covered_lines=$((covered_lines + file_covered))
@@ -385,7 +394,7 @@ jobs:
 
           gate="fail"
 
-          if awk \
+          if [[ "$package_coverage_failed" == "false" ]] && awk \
             -v covered="$covered_lines" \
             -v total="$total_lines" \
             -v required="$COVERAGE_MIN" \

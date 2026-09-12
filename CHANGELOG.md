@@ -14,6 +14,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+
+- Rename the Dart package and public library to `jocaagura_ai`, including imports,
+  examples and documentation. The GitHub repository remains `jocaagura_ia`.
+  Consumers must migrate their dependency/import names; domain JSON is unchanged.
+- Enforce the coverage minimum for each package as well as the combined report.
+
+### Added
+
+- Add the nonpublishable pure Dart `jocaagura_ai_server` integration consumer,
+  implementing `AiGateway` with embedded Gemma 4 E2B via llamadart/LiteRT-LM CPU.
+- Add `POST /v1/inference` and a socket-free smoke mode sharing one composition
+  root, with local resource ownership, bounded requests and domain error mapping.
+- Add adapter/HTTP tests and reproducible local POC preparation instructions.
+
 ## [0.0.1] - 2026-09-12
 
 ### Added
