@@ -1,0 +1,19 @@
+name: jocaagura_ai_server
+description: Local Gemma integration consumer of the Jocaagura AI domain.
+version: 0.0.1
+publish_to: none
+environment:
+  sdk: ^3.13.2
+dependencies:
+  jocaagura_ai:
+    path: ../..
+  llamadart: 0.8.23
+  shelf: ^1.4.2
+dev_dependencies:
+  coverage: ^1.15.1
+  mocktail: ^1.0.4
+  test: ^1.25.6
+hooks:
+  user_defines:
+    llamadart:
+      llamadart_native_runtimes: [litert_lm]

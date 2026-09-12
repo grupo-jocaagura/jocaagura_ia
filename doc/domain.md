@@ -2,6 +2,12 @@
 
 ## Scope
 
+The Dart package is now named `jocaagura_ai` (formerly `jocaagura_ia`); the
+GitHub repository name is unchanged. Import `package:jocaagura_ai/jocaagura_ai.dart`.
+This rename does not change the domain API, enum names or serialized payloads.
+The separate `packages/jocaagura_ai_server` consumes these contracts; engine,
+transport and configuration code stay outside the core.
+
 Implement the initial pure Dart domain for local AI inference and model lifecycle
 management. No Flutter, jocaagura_domain, inference runtime, or production
 third-party dependencies are introduced. Jocaagura conventions are adopted

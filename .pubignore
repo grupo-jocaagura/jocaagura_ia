@@ -9,3 +9,10 @@ pubspec.lock
 .gitattributes
 **/__pycache__/
 **/*.pyc
+
+# Integration consumer and private POC resources
+packages/
+.local/
+*.gguf
+*.litertlm
+.env

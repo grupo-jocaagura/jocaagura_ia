@@ -1,4 +1,4 @@
-# Jocaagura IA
+# Jocaagura AI
 
 ![CI](https://img.shields.io/github/actions/workflow/status/grupo-jocaagura/jocaagura_ia/validate_pr.yaml?branch=develop)
 ![Status](https://img.shields.io/badge/status-domain%20prototype-blue)
@@ -8,7 +8,7 @@ Pure Dart domain contracts for local AI inference and model lifecycle management
 
 ## Description
 
-`jocaagura_ia` aims to provide a shared domain API for running AI models inside the application.
+`jocaagura_ai` aims to provide a shared domain API for running AI models inside the application.
 
 Business logic will interact with Jocaagura-owned requests, responses, model descriptors, and lifecycle states. Adapters will handle the integration with the inference engine, runtime, model format, and local model files.
 
@@ -24,7 +24,7 @@ The approach includes:
 
 ## Project status
 
-**Bootstrap — version `0.0.0`.**
+**Domain version `0.0.1`, with the package rename and local POC under Unreleased.**
 
 The package provides ten immutable `ModelAi*` data models, six `EnumAi*` enums,
 `AiResult<T>` variants, and the `AiGateway` / `AiModelManager` interfaces.
@@ -32,8 +32,10 @@ The package provides ten immutable `ModelAi*` data models, six `EnumAi*` enums,
 The domain depends only on the Dart SDK. It follows Jocaagura conventions without
 depending on Flutter or `jocaagura_domain`.
 
-Inference engines and model-management adapters are not implemented yet. The
-local inference scenarios below remain POC milestones.
+The separate [jocaagura_ai_server](https://github.com/grupo-jocaagura/jocaagura_ia/tree/develop/packages/jocaagura_ai_server) package
+implements the first local inference POC. It depends on this core and on the
+runtime; the core does not depend on the server. Full model management remains
+future work. See the [POC evidence](doc/local_inference_poc.md) for tested scope.
 
 ## Architecture
 
@@ -41,7 +43,7 @@ local inference scenarios below remain POC milestones.
 Dart / Flutter Application
           │
           ▼
-     jocaagura_ia
+     jocaagura_ai
      ├── AiGateway ─────────► Local inference adapter
      │                                │
      │                                ▼
@@ -87,19 +89,21 @@ explicit compatibility decision, including during pre-1.0 development.
 
 Classes and types belonging to the inference engine will remain isolated inside their adapters.
 
-### Candidate engine for the POC
+### Local inference consumer
 
-The initial discovery proposes evaluating [llamadart](https://pub.dev/packages/llamadart).
+`packages/jocaagura_ai_server` uses [llamadart](https://pub.dev/packages/llamadart)
+0.8.23 with LiteRT-LM CPU and a local Gemma 4 E2B `.litertlm` artifact.
 
 Its current documentation describes local execution of GGUF models through `llama.cpp` and `.litertlm` models through LiteRT-LM.
 
-`llamadart` is not yet a dependency of this package.
+`llamadart` is a dependency only of the server, never of this domain package.
 
-Validation will begin with one local model and one concrete combination of device, runtime, and inference backend.
+The POC supports one user text message, one configured model ID and greedy
+generation. HTTP and direct smoke commands use the same embedded adapter.
 
 Support for each platform, format, modality, backend, and hardware accelerator will only be documented after it has been tested.
 
-Compatibility claimed by an upstream inference engine does not automatically constitute verified support by `jocaagura_ia`.
+Compatibility claimed by an upstream inference engine does not automatically constitute verified support by `jocaagura_ai`.
 
 The architecture may later support optional remote adapters.
 
@@ -114,7 +118,8 @@ Remote execution must remain explicit. The local-first design does not automatic
 
 Flutter is not required to use or test the domain package.
 
-Flutter integration requirements will be defined once the first local inference adapter is introduced.
+The first server consumer also runs with Dart alone. Flutter integration is
+outside this POC.
 
 ### Local development
 
@@ -130,7 +135,7 @@ dart test
 
 ```dart
 import 'dart:convert';
-import 'package:jocaagura_ia/jocaagura_ia.dart';
+import 'package:jocaagura_ai/jocaagura_ai.dart';
 
 final ModelAiRequest request = ModelAiRequest(
   requestId: 'request-1',
@@ -156,15 +161,23 @@ Every model provides `fromJson`, `toJson`, `copyWith`, value equality, and
 immutable collections. Explicit null clears nullable fields in `copyWith`;
 omitting an argument preserves it. Unknown measurements remain null, not zero.
 
-Run the [fixture example](example/jocaagura_ia_example.dart) with:
+Run the [fixture example](example/jocaagura_ai_example.dart) with:
 
 ```sh
-dart run example/jocaagura_ia_example.dart
+dart run example/jocaagura_ai_example.dart
 ```
 
 The example demonstrates serialization and result handling; it performs no real
-inference. Installation from pub.dev and an inference example will follow the
-first functional runtime integration.
+inference. Run the separate server's [inference example](https://github.com/grupo-jocaagura/jocaagura_ia/tree/develop/packages/jocaagura_ai_server)
+for the local model POC. Package publication remains a separate release step.
+
+### Package migration
+
+Change the dependency name from `jocaagura_ia` to `jocaagura_ai` and import
+`package:jocaagura_ai/jocaagura_ai.dart`. No old-name entrypoint shim is provided.
+All public domain type names, enum names and JSON payloads remain unchanged.
+The GitHub repository and Git dependency URL remain
+`https://github.com/grupo-jocaagura/jocaagura_ia`.
 
 Version `0.0.0` is reserved for the bootstrap phase.
 
@@ -243,6 +256,6 @@ Changes involving model integrations must also document:
 - [Jocaagura Domain](https://github.com/grupo-jocaagura/jocaagura_domain): reference for domain conventions. This package intentionally has no dependency on it.
 - [Candidate inference engine documentation](https://pub.dev/packages/llamadart).
 
-The MIT License applies to the `jocaagura_ia` source code.
+The MIT License applies to the `jocaagura_ai` source code.
 
 Models, inference runtimes, native libraries, and related assets retain their own licenses and distribution terms.

@@ -1,6 +1,8 @@
-# jocaagura_ia CI/CD
+# jocaagura_ai CI/CD
 
-This project is a Dart package. `0.0.0` identifies the local bootstrap and
+The root is the pure Dart `jocaagura_ai` package, version `0.0.1`.
+The nonpublishable `packages/jocaagura_ai_server` consumer has its own pubspec,
+tests and coverage dependency; CI discovers both tracked packages. `0.0.0` identifies the historical bootstrap and
 cannot be published through the workflow. The minimum Dart version is 3.13.2.
 
 ## Continuous integration
@@ -18,7 +20,7 @@ with actionlint, Dart tests, and LCOV coverage. Commit queries use pagination;
 the first push validates the entire history. Manual runs verify the signature
 of the selected commit.
 
-The minimum coverage is **95%**, with a target of **100%**. The optional Actions
+The minimum coverage is **95% per package and combined**, with a target of **100%**. The optional Actions
 variable `COVERAGE_MIN` can only raise the threshold, up to 100. The actual ratio
 is compared without rounding. Missing tests or executable lines cause CI to fail.
 Reports are retained for 14 days. Coverage measures the lines in `lib` reported
@@ -99,9 +101,19 @@ that already succeeded.
   the same version again. Subsequent tags use the complete workflow.
 - Restrict creation and modification of `v*` tags to release maintainers.
 
-The bootstrap dry run will still warn that `0.0.0` has no release entry.
-This is intentional at this initial stage; the workflow blocks its publication.
-The official URL is already declared in `pubspec.yaml`.
+The historical bootstrap `0.0.0` has no release entry and cannot be published.
+The official repository URL remains unchanged by the Dart package rename.
+Before first publication of `jocaagura_ai`, verify pub.dev name ownership and
+configure its own publishing settings for `grupo-jocaagura/jocaagura_ia` and
+`v{{version}}`. An old package's publishing configuration does not migrate by
+renaming pubspec. The integration server is excluded from the root package
+archive and must never be published. This change does not create a release/tag.
+
+Server unit tests use a mocked engine and need no model weights. Its native build
+hook may prepare runtime libraries before tests; this is separate from the
+root's runtime-free domain checks. The opt-in real HTTP and offline proofs are
+documented in `packages/jocaagura_ai_server/README.md`; CI unit success does not
+substitute for them. Commit the server lockfile to record the POC dependency tuple.
 
 References: [Dart automated publishing](https://dart.dev/tools/pub/automated-publishing),
 [events and GITHUB_TOKEN](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow),
