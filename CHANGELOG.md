@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Standardize CI/CD documentation, package metadata, and workflow comments in English.
 - Set the official public repository URL and describe the local AI package scope.
 - Adapt continuous integration to the Dart package, including strict analysis,
   tests, a minimum of 95% coverage, and commit signature verification.

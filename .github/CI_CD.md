@@ -1,35 +1,35 @@
-# CI/CD de jocaagura_ia
+# jocaagura_ia CI/CD
 
-El proyecto es un paquete Dart. `0.0.0` identifica el bootstrap local;
-no se publica mediante el workflow. La versión mínima de Dart es 3.13.2.
+This project is a Dart package. `0.0.0` identifies the local bootstrap and
+cannot be published through the workflow. The minimum Dart version is 3.13.2.
 
-## Integración continua
+## Continuous integration
 
-`Dart CI` se ejecuta en pushes a cualquier rama, PR hacia `develop` o `master`,
-ejecución manual y llamadas desde preparación/publicación de versiones.
-Los jobs no omiten actores bot ni títulos de PR con `[skip ci]`.
-GitHub todavía reconoce sus propias instrucciones de omisión en mensajes de
-commit: el check obligatorio `CI result` debe estar configurado para impedir
-integrar cambios sin validación. No uses instrucciones de omisión de CI.
+`Dart CI` runs on pushes to any branch, pull requests targeting `develop` or
+`master`, manual runs, and calls from version preparation or publishing workflows.
+Jobs do not skip bot actors or pull requests with `[skip ci]` in their titles.
+GitHub still recognizes its own skip instructions in commit messages: configure
+`CI result` as a required check to prevent merging changes without validation.
+Do not use CI skip instructions.
 
-Los controles incluyen firmas verificadas por GitHub, ausencia de overrides
-versionados, formato, análisis estricto, pruebas de los scripts de release,
-validación de workflows con actionlint, pruebas Dart y cobertura LCOV.
-La consulta de commits usa paginación; el primer push valida toda su historia.
-En una ejecución manual se verifica la firma del commit seleccionado.
+Checks include GitHub-verified commit signatures, the absence of tracked dependency
+overrides, formatting, strict analysis, release script tests, workflow validation
+with actionlint, Dart tests, and LCOV coverage. Commit queries use pagination;
+the first push validates the entire history. Manual runs verify the signature
+of the selected commit.
 
-La cobertura mínima es **95 %**, con objetivo del **100 %**. La variable de
-Actions `COVERAGE_MIN` es opcional y solo permite elevar el umbral hasta 100.
-Se compara la proporción real sin redondearla. La ausencia de pruebas o líneas
-ejecutables hace fallar CI. Los informes se conservan durante 14 días.
-La cobertura mide las líneas de `lib` reportadas por la VM durante las pruebas;
-no garantiza que archivos nunca cargados estén incluidos. El scaffold inicial
-solo tiene una línea ejecutable, por lo que su 100 % no mide funcionalidad futura.
+The minimum coverage is **95%**, with a target of **100%**. The optional Actions
+variable `COVERAGE_MIN` can only raise the threshold, up to 100. The actual ratio
+is compared without rounding. Missing tests or executable lines cause CI to fail.
+Reports are retained for 14 days. Coverage measures the lines in `lib` reported
+by the VM during tests; it does not guarantee that files never loaded are included.
+The initial scaffold has only one executable line, so its 100% coverage does not
+measure future functionality.
 
-CodeQL analiza el lenguaje `actions`, es decir, los propios workflows. No
-analiza Dart. Se ejecuta en PR/push de las ramas principales y semanalmente.
+CodeQL analyzes the `actions` language: the workflows themselves. It does not
+analyze Dart. It runs on pull requests and pushes to the main branches, and weekly.
 
-### Comprobación local
+### Local checks
 
 ```sh
 dart pub get
@@ -41,68 +41,68 @@ python -m pip install -r .github/scripts/requirements.txt
 python -m unittest discover -s .github/scripts/tests -v
 ```
 
-Las pruebas de scripts requieren Bash; está incluido en Git for Windows.
-Si cambia la versión mínima del SDK, actualiza los pasos `setup-dart` de CI y
-publicación. Los paquetes anidados con pruebas también deben declarar `coverage`
-como dependencia de desarrollo.
+Script tests require Bash, which is included in Git for Windows. If the minimum
+SDK version changes, update the `setup-dart` steps in CI and publishing workflows.
+Nested packages with tests must also declare `coverage` as a development dependency.
 
-## Preparación de versiones
+## Version preparation
 
-1. Agrega las contribuciones bajo `## Unreleased` en `CHANGELOG.md`.
-2. Ejecuta `Prepare version` seleccionando la rama `develop`.
-3. Indica una versión estable `X.Y.Z` superior a la actual, por ejemplo `0.0.1`,
-   y notas Markdown UTF-8 codificadas en Base64. Deben contener secciones `###`
-   como `### Added` o `### Fixed`, sin encabezados `##`.
-4. El workflow valida CI, mueve las notas a `## [X.Y.Z] - YYYY-MM-DD`, conserva
-   `Unreleased` vacío y crea un commit firmado por GitHub en `develop`.
-5. Integra `develop` en `master` mediante PR y CI aprobado.
+1. Add contributions under `## Unreleased` in `CHANGELOG.md`.
+2. Run `Prepare version` with the `develop` branch selected.
+3. Provide a stable `X.Y.Z` version higher than the current one, such as `0.0.1`,
+   and Base64-encoded UTF-8 Markdown notes. The notes must contain `###` sections,
+   such as `### Added` or `### Fixed`, without `##` headings.
+4. The workflow runs CI, moves the notes to `## [X.Y.Z] - YYYY-MM-DD`, keeps an
+   empty `Unreleased` section, and creates a GitHub-signed commit on `develop`.
+5. Merge `develop` into `master` through a pull request with passing CI.
 
-Solo se admiten releases estables en este flujo; no se aceptan sufijos `+build`
-ni prereleases. Repetir la misma versión con las mismas notas no crea otro
-commit; cambiar notas de una versión preparada produce un error.
-La actualización verifica el HEAD esperado para evitar sobrescribir cambios
-concurrentes. Si el HEAD cambia, vuelve a ejecutar el workflow.
+This flow only supports stable releases; `+build` suffixes and prereleases are
+not accepted. Repeating the same version with the same notes does not create
+another commit; changing the notes of a prepared version produces an error.
+The update checks the expected HEAD to avoid overwriting concurrent changes.
+If HEAD changes, run the workflow again.
 
-El commit de preparación usa `GITHUB_TOKEN`, cuyo push no dispara otro CI;
-por eso se ejecuta CI antes de modificar los dos archivos de versión, y se
-repite para el PR de integración y para el tag de publicación.
-Si las reglas de `develop` impiden commits directos del workflow, la operación
-fallará: en ese caso prepara esos dos archivos mediante un PR normal, sin
-desactivar las protecciones de la rama.
+The preparation commit uses `GITHUB_TOKEN`, whose push does not trigger another
+CI run. CI therefore runs before the two version files are modified, and runs
+again for the integration pull request and the publishing tag. If branch rules
+prevent the workflow from committing directly to `develop`, the operation fails.
+In that case, prepare those two files through a regular pull request without
+disabling branch protections.
 
-## Publicación
+## Publishing
 
-El workflow `Publish package` se activa con un tag `vX.Y.Z`. Comprueba que el
-commit pertenezca al historial de `master`, que coincida con `pubspec.yaml`,
-que la versión sea distinta de `0.0.0` y tenga una única entrada de changelog
-con fecha y contenido. Ejecuta `dart pub publish --dry-run`, CI completo y
-el workflow oficial de Dart para publicar mediante OIDC, sin tokens duraderos.
-Después crea la GitHub Release con las notas de esa versión.
-Si solo falla la creación de la GitHub Release, reejecuta los jobs fallidos
-para evitar repetir la publicación que ya se realizó.
+The `Publish package` workflow is triggered by a `vX.Y.Z` tag. It checks that the
+commit belongs to the history of `master`, the tag matches `pubspec.yaml`, and
+the version differs from `0.0.0` and has exactly one dated changelog entry with
+content. It runs `dart pub publish --dry-run`, the full CI pipeline, and the
+official Dart publishing workflow using OIDC without long-lived tokens.
+It then creates a GitHub Release with that version's notes. If only GitHub
+Release creation fails, rerun the failed jobs to avoid repeating a publication
+that already succeeded.
 
-## Configuración al crear el repositorio oficial
+## Official repository setup
 
-- Crea un repositorio vacío y conecta su URL como `origin`; sube `master` y
-  `develop`. Añade esa URL al campo `repository` de `pubspec.yaml`.
-- Registra en GitHub la clave pública que firma los commits locales para que
-  aparezcan como `Verified`. CI exige esa verificación desde el primer push.
-- Configura `CI result` como check obligatorio y los PR de integración a
-  `master`. Configura CodeQL según la disponibilidad de code scanning del repo.
-- `COVERAGE_MIN` puede omitirse (95 %) o configurarse entre 95 y 100.
-- Completa la descripción, README y funcionalidad del paquete antes de la
-  primera publicación. Mantén notas reales para la versión que se publique.
-- La primera publicación de un paquete nuevo debe realizarla un mantenedor;
-  después, habilita Automated publishing en pub.dev para el repositorio oficial
-  y el patrón `v{{version}}`. Para esa primera versión, publica manualmente
-  desde el commit validado y después crea su tag/release; el job OIDC no podrá
-  publicar de nuevo la misma versión. Los siguientes tags usarán el flujo completo.
-- Restringe la creación/modificación de tags `v*` a los responsables de releases.
+- Create an empty repository and connect its URL as `origin`; push `master`
+  and `develop`. Add that URL to the `repository` field in `pubspec.yaml`.
+- Register the public key used to sign local commits on GitHub so they appear
+  as `Verified`. CI requires this verification from the first push.
+- Configure `CI result` as a required check and require pull requests for
+  integration into `master`. Configure CodeQL according to the repository's
+  code scanning availability.
+- Omit `COVERAGE_MIN` to use 95%, or set it to a value between 95 and 100.
+- Complete the package description, README, and functionality before the first
+  publication. Keep accurate notes for the version being published.
+- A maintainer must publish a new package for the first time. Then enable
+  Automated publishing on pub.dev for the official repository and the
+  `v{{version}}` pattern. For that first version, publish manually from the
+  validated commit and then create its tag/release; the OIDC job cannot publish
+  the same version again. Subsequent tags use the complete workflow.
+- Restrict creation and modification of `v*` tags to release maintainers.
 
-El dry-run del bootstrap todavía advertirá que `0.0.0` no tiene entrada de
-release. Es una condición deliberada de esta fase inicial; el workflow bloquea
-su publicación. La URL oficial ya está declarada en `pubspec.yaml`.
+The bootstrap dry run will still warn that `0.0.0` has no release entry.
+This is intentional at this initial stage; the workflow blocks its publication.
+The official URL is already declared in `pubspec.yaml`.
 
-Referencias: [publicación automatizada de Dart](https://dart.dev/tools/pub/automated-publishing),
-[eventos y GITHUB_TOKEN](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow),
-[lenguajes de CodeQL](https://codeql.github.com/docs/codeql-overview/supported-languages-and-frameworks/).
+References: [Dart automated publishing](https://dart.dev/tools/pub/automated-publishing),
+[events and GITHUB_TOKEN](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow),
+[CodeQL languages](https://codeql.github.com/docs/codeql-overview/supported-languages-and-frameworks/).

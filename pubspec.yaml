@@ -1,7 +1,7 @@
 name: jocaagura_ia
 description: >-
-  Paquete Dart en desarrollo para integrar IA local en aplicaciones Dart y Flutter,
-  con contratos Jocaagura para inferencia offline y gestión de modelos.
+  A Dart package in development for local AI in Dart and Flutter applications,
+  with Jocaagura contracts for offline inference and model management.
 version: 0.0.0
 repository: https://github.com/grupo-jocaagura/jocaagura_ia
 
