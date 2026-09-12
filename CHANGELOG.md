@@ -16,11 +16,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add ten immutable ModelAi values, six EnumAi enums, exhaustive AiResult variants,
+  and pure Dart inference/model-management interfaces (issue #3).
+- Require failed lifecycle recovery through verified resource states and defer
+  active cancellation to a future execution/streaming contract.
+- Define strict JSON decoding, deterministic round trips, nullable copy semantics,
+  source integrity invariants, and explicit lifecycle transitions.
+- Document the domain contract and provide a runtime-free executable example.
+
 - Document the local AI discovery, proposed contracts, and initial offline POC.
 - Validate tagged releases and publish to pub.dev through OIDC after CI passes.
 - Document CI/CD setup and test version preparation and coverage gates.
 
 ### Changed
+
+- Replace the Awesome scaffold with an SDK-only domain and comprehensive tests.
 
 - Standardize CI/CD documentation, package metadata, and workflow comments in English.
 - Set the official public repository URL and describe the local AI package scope.
