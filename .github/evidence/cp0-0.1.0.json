@@ -1,5 +1,5 @@
 {
-  "status": "service_acceptance_verified_audit_attribution_pending",
+  "status": "passed",
   "package": "jocaagura_ai",
   "version": "0.1.0",
   "publishing_configuration": {
@@ -47,6 +47,15 @@
     "creation": "GITHUB_TOKEN in prepare-tag workflow"
   },
   "first_attempt_before_recovery": "https://github.com/grupo-jocaagura/jocaagura_ia/actions/runs/34733145670",
-  "audit_log_attribution": "pending maintainer confirmation; available browser requires authentication",
-  "post_merge_orchestration": "not implemented"
+  "audit_log_attribution": {
+    "confirmed_by": "maintainer supplied pub.dev activity-log entry",
+    "url": "https://pub.dev/packages/jocaagura_ai/activity-log",
+    "package": "jocaagura_ai",
+    "version": "0.1.0",
+    "publisher": "jocaagura.com",
+    "run_id": "34733859146",
+    "commit": "d60302c7ad0f65b25356fb02516fb899597e42aa",
+    "note": "The activity-log prose says pushing revision; the recorded GitHub event and OIDC claim are workflow_dispatch."
+  },
+  "post_merge_orchestration": "implemented in release_after_merge.yaml; activation requires merge into develop then master"
 }

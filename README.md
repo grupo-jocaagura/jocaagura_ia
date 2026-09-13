@@ -286,7 +286,10 @@ Models, inference runtimes, native libraries, and related assets retain their ow
 
 Development patch versions accumulate changes on `develop`. Public promotions
 explicitly choose a minor or major bump and consolidate the preceding patch
-notes with `Unreleased`, preserving the historical entries. The initial configured
-promotion is `0.0.3 -> 0.1.0`; `Prepare promotion` performs that bump in CI before
-the `develop -> master` PR. See [.github/CI_CD.md](https://github.com/grupo-jocaagura/jocaagura_ia/blob/develop/.github/CI_CD.md)
-for the preparation flow and the CP-0 gate on automatic publication.
+notes with `Unreleased`, preserving the historical entries. `Prepare promotion`
+performs the selected bump in CI before the `develop -> master` PR. After merge,
+CI evaluates publication, creates an immutable version tag with GITHUB_TOKEN and
+dispatches the OIDC publisher. Existing versions are skipped. The initial
+`0.0.3 -> 0.1.0` publication verified this connection with pub.dev. See
+[.github/CI_CD.md](https://github.com/grupo-jocaagura/jocaagura_ia/blob/develop/.github/CI_CD.md)
+for the release discipline, configuration and recovery procedure.

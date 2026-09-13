@@ -1,11 +1,12 @@
 # CP-0: Automated publishing trigger discovery
 
-Status: **SERVICE ACCEPTANCE VERIFIED — final pub.dev audit attribution pending.**
+Status: **PASSED — live service acceptance and pub.dev audit attribution confirmed.**
 
 The real 0.1.0 release succeeded via tag-ref workflow dispatch. See the
 [recorded evidence](evidence/cp0-0.1.0.json) and the successful retry below.
-Post-merge orchestration remains unimplemented; historical pending/failure
-sections below describe earlier checkpoints, not the current upload result.
+Post-merge orchestration is now implemented in `release_after_merge.yaml` and
+the tag-dispatched publisher. Historical pending/failure sections below describe
+earlier checkpoints, not the current state; see [CI_CD.md](CI_CD.md) for operations.
 
 Issue: https://github.com/grupo-jocaagura/jocaagura_ia/issues/8
 
@@ -237,3 +238,16 @@ The available browser cannot read the authenticated pub.dev audit log; its
 attribution to run 34733859146 was requested from the maintainer to complete the
 agreed evidence record. Automatic post-merge orchestration remains a subsequent
 implementation step. Never re-upload 0.1.0 or move its now-published tag.
+
+## CP-0 completion
+
+The maintainer supplied the pub.dev activity-log entry attributing publication of
+jocaagura_ai 0.1.0, owned by jocaagura.com, to GitHub Actions run **34733859146** and
+commit **d60302c7ad0f65b25356fb02516fb899597e42aa**. Both match the recorded claims,
+successful upload and independently verified archive. CP-0 is now **passed**.
+The activity-log prose says "pushing revision"; use the actual workflow event and
+OIDC `event_name=workflow_dispatch` as the precise trigger evidence. No credentials
+or maintainer email addresses are needed in the evidence record.
+
+After this completion was recorded, the post-merge orchestrator was implemented.
+It requires passed CP-0 evidence before creating tags or dispatching publication.

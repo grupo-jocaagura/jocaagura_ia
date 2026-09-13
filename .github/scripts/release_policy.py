@@ -97,7 +97,7 @@ def publication_state(version, package):
         raise ValueError("Release version regresses behind a published stable version")
     if target in stable:
         return "already_published"
-    return "ready_for_human_tag"
+    return "ready_to_publish"
 
 
 def require_merged_commit(sha, *, reader=read_json):
@@ -146,7 +146,7 @@ def main():
         messages = {
             "manual_first_publication": "First publication requires a maintainer; automatic upload is blocked.",
             "already_published": "This version already exists; skip upload. Never overwrite a published version.",
-            "ready_for_human_tag": "Eligible after CI and merge. CP-0 is pending: a maintainer must push the release tag.",
+            "ready_to_publish": "Eligible after CI and an official develop -> master merge.",
         }
         print(f"{state}: {PACKAGE} {version}. {messages[state]}")
         if os.environ.get("GITHUB_OUTPUT"):

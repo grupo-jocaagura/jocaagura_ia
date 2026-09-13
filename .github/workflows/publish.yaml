@@ -3,6 +3,7 @@ name: Publish package
 on:
   push:
     tags: ['v[0-9]+.[0-9]+.[0-9]+']
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -22,18 +23,29 @@ jobs:
     outputs:
       state: ${{ steps.eligibility.outputs.state }}
     steps:
-      - name: Require a human-pushed tag while CP-0 is pending
+      - name: Require a tag dispatch or human-pushed tag
         env:
           EVENT_NAME: ${{ github.event_name }}
           REF_TYPE: ${{ github.ref_type }}
           SENDER_TYPE: ${{ github.event.sender.type }}
         run: |
-          test "$EVENT_NAME" = push
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = grupo-jocaagura/jocaagura_ia
           test "$REF_TYPE" = tag
-          test "$SENDER_TYPE" = User
+          case "$EVENT_NAME" in
+            workflow_dispatch) ;;
+            push) test "$SENDER_TYPE" = User ;;
+            *) exit 1 ;;
+          esac
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          persist-credentials: false
+      - name: Require completed CP-0 for dispatch publication
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          python3 -m pip install --disable-pip-version-check -r .github/scripts/requirements.txt
+          python3 -c "import json,sys; sys.path.insert(0,'.github/scripts'); from release_dispatch import require_cp0; require_cp0(json.load(open('.github/evidence/cp0-0.1.0.json')))"
       - name: Require a release from master
         shell: bash
         run: |
@@ -66,7 +78,7 @@ jobs:
   publish:
     name: Publish to pub.dev
     needs: [ci, release_validation]
-    if: needs.release_validation.outputs.state == 'ready_for_human_tag'
+    if: needs.release_validation.outputs.state == 'ready_to_publish'
     permissions:
       contents: read
       id-token: write
