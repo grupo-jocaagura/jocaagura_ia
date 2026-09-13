@@ -1,6 +1,6 @@
 # CP-0: Automated publishing trigger discovery
 
-Status: **PENDING — package settings confirmed; live OIDC acceptance is still unverified.**
+Status: **PENDING — first live run stopped at local OIDC validation before upload.**
 
 Issue: https://github.com/grupo-jocaagura/jocaagura_ia/issues/8
 
@@ -72,7 +72,7 @@ package-authorization step cannot be tested safely without a new release.
 | `repository` | `grupo-jocaagura/jocaagura_ia` |
 | `sha` | Exact validated release commit; compare the tag's peeled commit |
 | Identity binding | Record `repository_id`, `repository_owner_id` and `repository_owner`; pub.dev can lock numeric identities |
-| `sub` | Record the actual subject; it normally represents the repository and tag, or the configured environment |
+| `sub` | Record the actual subject; this repository requires the immutable owner/repository IDs and tag, as confirmed below |
 | Environment | Record whether required and the exact `environment` claim if enabled |
 | Audit evidence | Record `run_id`, workflow URL, timestamp, event, ref and sanitized result |
 | pub.dev package | `jocaagura_ai` |
@@ -152,3 +152,49 @@ The regular human-pushed-tag workflow remains the fallback for an unpublished
 release when CP-0 cannot be accepted; an existing experimental tag requires an
 explicit recovery decision, not recreation. GitHub Release creation is a separate
 follow-up after a verified experimental publication.
+
+## First live attempt and immutable-subject correction
+
+On 2026-09-13 UTC, the maintainer explicitly confirmed the real 0.1.0 upload.
+[Run 34733145670](https://github.com/grupo-jocaagura/jocaagura_ia/actions/runs/34733145670)
+used `workflow_dispatch` on `v0.1.0` at
+`8761a8e55bee5fddf64ecffb219aa7e48ff294c4`. Preflight, dry run and full CI passed.
+The official setup-dart action obtained an OIDC token, but our local claims check
+failed. The actual upload step was **skipped**; pub.dev still had no 0.1.0 version.
+This is not a pub.dev authorization rejection and does not pass CP-0.
+
+The original verifier incorrectly required the legacy name-only `sub`. GitHub's
+read-only `GET /repos/grupo-jocaagura/jocaagura_ia/actions/oidc/customization/sub`
+confirmed this actual repository configuration:
+
+```json
+{
+  "use_default": true,
+  "use_immutable_subject": true,
+  "sub_claim_prefix": "repo:grupo-jocaagura@193098028/jocaagura_ia@1367412398"
+}
+```
+
+The repository was created on 2026-09-12. GitHub now defaults new repositories to
+immutable subjects; see [the official change](https://github.blog/changelog/2026-04-23-immutable-subject-claims-for-github-actions-oidc-tokens/)
+and [OIDC reference](https://docs.github.com/en/actions/reference/security/oidc).
+The expected tag subject is therefore:
+`repo:grupo-jocaagura@193098028/jocaagura_ia@1367412398:ref:refs/tags/v0.1.0`.
+This value is derived from the actual configuration; the failed run did not emit
+its JWT claims because validation precedes recording. The old generic diagnostic
+cannot prove which field failed first, but the incompatible subject check is
+confirmed and must be corrected before any retry.
+
+The corrected verifier binds both numeric IDs, repository names and the exact
+tag subject; it does not change GitHub settings or allow the legacy subject for
+this repository. A dedicated exception now reports only the failed field name,
+never the JWT or received value. Tests cover the confirmed immutable prefix,
+wrong IDs, wrong refs, rejected legacy subjects and token-free CLI diagnostics.
+
+**Recovery remains pending.** The existing tag was not moved or deleted and
+still contains the old verifier. Re-running that tag cannot load this correction.
+A replacement of this still-unpublished tag would require an explicit maintainer
+exception to the documented tag-immutability rule after reviewing this fix,
+integration through develop -> master and successful CI. Do not change the tag,
+downgrade OIDC configuration or retry publication automatically as part of this PR.
+Record any approved recovery and both old/new SHAs before attempting the upload.

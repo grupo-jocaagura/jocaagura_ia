@@ -3,6 +3,7 @@
 import base64
 from copy import deepcopy
 import json
+import io
 import os
 from pathlib import Path
 import subprocess
@@ -14,7 +15,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / '.github/scripts'))
-from cp0_publication import decode_claims, preflight, validate_claims
+from cp0_publication import ClaimValidationError, decode_claims, main, preflight, validate_claims
 
 SHA = 'a' * 40
 ENV = {
@@ -26,7 +27,7 @@ CLAIMS = {
     'event_name': 'workflow_dispatch', 'ref_type': 'tag', 'ref': 'refs/tags/v0.1.0',
     'repository': 'grupo-jocaagura/jocaagura_ia', 'repository_owner': 'grupo-jocaagura',
     'sha': SHA, 'repository_id': '123', 'repository_owner_id': '456',
-    'sub': 'repo:grupo-jocaagura/jocaagura_ia:ref:refs/tags/v0.1.0',
+    'sub': 'repo:grupo-jocaagura@456/jocaagura_ia@123:ref:refs/tags/v0.1.0',
     'run_id': '789', 'run_attempt': '1',
     'workflow_ref': 'grupo-jocaagura/jocaagura_ia/.github/workflows/cp0_publication.yaml@refs/tags/v0.1.0',
     'exp': 2000,
@@ -49,6 +50,33 @@ class CP0Tests(unittest.TestCase):
                       dict(CLAIMS, ref='refs/heads/develop'), dict(CLAIMS, event_name='push')]:
             with self.assertRaises(ValueError):
                 validate_claims(wrong, ENV, 1000)
+
+    def test_repository_confirmed_immutable_subject_and_wrong_identity_rejection(self):
+        live_env = dict(ENV, EXPECTED_OWNER_ID='193098028', EXPECTED_REPOSITORY_ID='1367412398')
+        prefix = 'repo:grupo-jocaagura@193098028/jocaagura_ia@1367412398'
+        live_claims = dict(CLAIMS, repository_owner_id='193098028', repository_id='1367412398',
+                           sub=prefix + ':ref:refs/tags/v0.1.0')
+        self.assertEqual(validate_claims(live_claims, live_env, 1000)['sub'], live_claims['sub'])
+        for sub in ['repo:grupo-jocaagura/jocaagura_ia:ref:refs/tags/v0.1.0',
+                    prefix.replace('@193098028', '@999') + ':ref:refs/tags/v0.1.0',
+                    prefix.replace('@1367412398', '@999') + ':ref:refs/tags/v0.1.0',
+                    prefix + ':ref:refs/heads/develop']:
+            with self.subTest(sub=sub), self.assertRaises(ClaimValidationError) as error:
+                validate_claims(dict(live_claims, sub=sub), live_env, 1000)
+            self.assertEqual(str(error.exception), 'sub')
+
+    def test_cli_reports_failed_claim_without_received_value_or_jwt(self):
+        payload = base64.urlsafe_b64encode(json.dumps(dict(CLAIMS, sub='private-received-value')).encode()).decode().rstrip('=')
+        token = f'header.{payload}.signature'
+        errors = io.StringIO()
+        with patch.dict(os.environ, dict(ENV, PUB_TOKEN=token)), \
+                patch.object(sys, 'argv', ['cp0_publication.py', 'claims']), \
+                patch('sys.stderr', errors), self.assertRaises(SystemExit) as error:
+            main()
+        self.assertEqual(error.exception.code, 1)
+        self.assertIn('claim mismatch: sub', errors.getvalue())
+        self.assertNotIn('private-received-value', errors.getvalue())
+        self.assertNotIn(token, errors.getvalue())
 
     def test_decoder_errors_do_not_echo_token(self):
         payload = base64.urlsafe_b64encode(json.dumps(CLAIMS).encode()).decode().rstrip('=')
