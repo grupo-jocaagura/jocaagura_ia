@@ -24,10 +24,12 @@ The approach includes:
 
 ## Project status
 
-**Domain version `0.0.1`, with the package rename and local POC under Unreleased.**
+**Package version `0.0.2`; ordered text/image input and declaration assessment
+are under Unreleased.**
 
-The package provides ten immutable `ModelAi*` data models, six `EnumAi*` enums,
-`AiResult<T>` variants, and the `AiGateway` / `AiModelManager` interfaces.
+The package provides immutable `ModelAi*` values, typed content parts/sources,
+directional declarations, a pure compatibility assessor, `AiResult<T>` variants,
+and the `AiGateway` / `AiModelManager` interfaces.
 
 The domain depends only on the Dart SDK. It follows Jocaagura conventions without
 depending on Flutter or `jocaagura_domain`.
@@ -98,8 +100,17 @@ Its current documentation describes local execution of GGUF models through `llam
 
 `llamadart` is a dependency only of the server, never of this domain package.
 
-The POC supports one user text message, one configured model ID and greedy
-generation. HTTP and direct smoke commands use the same embedded adapter.
+The POC supports one user message containing one text part, one configured model
+ID and greedy generation. HTTP and direct smoke use the same embedded adapter.
+Its companion API migration rejects images and multipart input before opening
+resources. No image inference is certified.
+
+The core represents ordered text/image input from inline bytes or lexical
+local-file references. `assessAiContentCompatibility` checks model and backend
+declarations without IO. Missing profiles/allowlists can yield `undetermined`;
+null maxima impose no declared bound and do not alone prevent
+`meetsDeclaredConstraints`. Meeting declarations is not proof of runtime support.
+See [content contracts and migration](doc/content.md) for the complete schema.
 
 Support for each platform, format, modality, backend, and hardware accelerator will only be documented after it has been tested.
 
@@ -141,9 +152,9 @@ final ModelAiRequest request = ModelAiRequest(
   requestId: 'request-1',
   modelId: 'local-model',
   messages: <ModelAiMessage>[
-    ModelAiMessage(
+    ModelAiMessage.text(
       role: EnumAiMessageRole.user,
-      content: 'Respond only with OK',
+      text: 'Respond only with OK',
     ),
   ],
   options: ModelAiGenerationOptions(maxOutputTokens: 8),
@@ -175,7 +186,13 @@ for the local model POC. Package publication remains a separate release step.
 
 Change the dependency name from `jocaagura_ia` to `jocaagura_ai` and import
 `package:jocaagura_ai/jocaagura_ai.dart`. No old-name entrypoint shim is provided.
-All public domain type names, enum names and JSON payloads remain unchanged.
+The 0.0.2 package rename preserved the domain API and JSON of that release.
+The Unreleased content extension separately migrates `ModelAiMessage` from
+`content` to `parts`: use `ModelAiMessage.text(role: ..., text: ...)` for one text
+part. Readers accept legacy `content` JSON; writers emit only canonical `parts`.
+Both keys together are rejected. Dart consumers must explicitly migrate without
+silently flattening mixed content. This is a breaking API/writer change;
+release version selection and publication remain separate work.
 The GitHub repository and Git dependency URL remain
 `https://github.com/grupo-jocaagura/jocaagura_ia`.
 
@@ -187,9 +204,9 @@ Version `0.0.0` is reserved for the bootstrap phase.
 
    Load a model already present on the device, execute a simple request — for example, `Respond only with OK` — and obtain the result through the Jocaagura domain API.
 
-   The initial discovery proposes Gemma 4 E2B in `.litertlm` format as the first candidate model.
-
-   Its final selection remains subject to runtime, device, memory, and compatibility testing.
+   The committed POC records Gemma 4 E2B `.litertlm` with LiteRT-LM CPU on one
+   Windows x64 computer, including two offline direct text runs. That evidence
+   does not certify images or additional devices/backends.
 
 2. **Installation and offline reuse.**
 
@@ -249,6 +266,7 @@ Changes involving model integrations must also document:
 ## Documentation map
 
 - [Domain models, JSON invariants, and lifecycle contracts](doc/domain.md).
+- [Ordered content, capability declarations, and API migration](doc/content.md).
 - [Package changes and evolution](CHANGELOG.md).
 - [MIT License](LICENSE).
 - [Repository operations](.github/CI_CD.md).
