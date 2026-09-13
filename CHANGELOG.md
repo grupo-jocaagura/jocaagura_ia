@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.0.3] - 2026-09-13
+
 ### Added
 
 - Add immutable ordered text/image input parts, inline-byte and lexical local-file
