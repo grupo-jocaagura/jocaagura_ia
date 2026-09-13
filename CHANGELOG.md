@@ -14,6 +14,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+
+- Escape the progress interval in Dartdoc so it is not treated as a link
+  (issue #8).
+
+### Added
+
+- Prepare explicit minor/major promotions in CI, consolidating Unreleased notes
+  and development patches since the previous promotion without deleting history.
+- Require public release versions to end in `.0`; development patches cannot
+  be published through the automated release route.
+
+- Validate release PR provenance, package identity, changelog and pub.dev version
+  eligibility before integration into `master`.
+- Make human-tag publication retries skip versions already published, while
+  rejecting regressions, inconsistent metadata and invalid release provenance.
+- Record CP-0 evidence and keep automatic post-merge orchestration unimplemented
+  until tag-ref workflow dispatch is verified against the live pub.dev settings.
+
 ## [0.0.3] - 2026-09-13
 
 ### Added

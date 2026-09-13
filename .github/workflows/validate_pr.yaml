@@ -531,10 +531,28 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  release_readiness:
+    name: Release readiness
+    if: github.event_name == 'pull_request' && github.base_ref == 'master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: '3.13.2'
+      - name: Validate release source, metadata and version
+        run: |
+          python3 -m pip install --disable-pip-version-check -r .github/scripts/requirements.txt
+          python3 .github/scripts/release_policy.py --pr-event "$GITHUB_EVENT_PATH"
+      - run: dart pub get
+      - name: Validate publication without publishing
+        run: dart pub publish --dry-run
+
   ci_result:
     name: CI result
     if: always()
-    needs: [base_validation, test_and_coverage]
+    needs: [base_validation, test_and_coverage, release_readiness]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -542,6 +560,13 @@ jobs:
         env:
           BASE_RESULT: ${{ needs.base_validation.result }}
           TEST_RESULT: ${{ needs.test_and_coverage.result }}
+          RELEASE_RESULT: ${{ needs.release_readiness.result }}
+          RELEASE_REQUIRED: ${{ github.event_name == 'pull_request' && github.base_ref == 'master' }}
         run: |
           test "$BASE_RESULT" = success
           test "$TEST_RESULT" = success
+          if [ "$RELEASE_REQUIRED" = true ]; then
+            test "$RELEASE_RESULT" = success
+          else
+            test "$RELEASE_RESULT" = skipped
+          fi

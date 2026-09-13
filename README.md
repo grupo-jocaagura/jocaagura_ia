@@ -24,8 +24,10 @@ The approach includes:
 
 ## Project status
 
-**Package version `0.0.2`; ordered text/image input and declaration assessment
-are under Unreleased.**
+**The domain includes ordered text/image input and declaration assessment.**
+
+See `pubspec.yaml` for the package version. Public releases consolidate development
+patches through the CI promotion workflow.
 
 The package provides immutable `ModelAi*` values, typed content parts/sources,
 directional declarations, a pure compatibility assessor, `AiResult<T>` variants,
@@ -138,6 +140,7 @@ From the repository root:
 
 ```sh
 dart pub get
+(cd packages/jocaagura_ai_server && dart pub get)
 dart analyze --fatal-infos --fatal-warnings .
 dart test
 ```
@@ -277,3 +280,13 @@ Changes involving model integrations must also document:
 The MIT License applies to the `jocaagura_ai` source code.
 
 Models, inference runtimes, native libraries, and related assets retain their own licenses and distribution terms.
+
+
+## Release discipline
+
+Development patch versions accumulate changes on `develop`. Public promotions
+explicitly choose a minor or major bump and consolidate the preceding patch
+notes with `Unreleased`, preserving the historical entries. The initial configured
+promotion is `0.0.3 -> 0.1.0`; `Prepare promotion` performs that bump in CI before
+the `develop -> master` PR. See [.github/CI_CD.md](https://github.com/grupo-jocaagura/jocaagura_ia/blob/develop/.github/CI_CD.md)
+for the preparation flow and the CP-0 gate on automatic publication.

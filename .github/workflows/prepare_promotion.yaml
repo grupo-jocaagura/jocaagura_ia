@@ -1,0 +1,72 @@
+name: Prepare promotion
+
+on:
+  workflow_dispatch:
+    inputs:
+      from_version:
+        description: 'Exact development version to promote (e.g. 0.0.3); keep it for retries'
+        required: true
+        type: string
+      bump:
+        description: 'Deliberate public release increment'
+        required: true
+        type: choice
+        options: [minor, major]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: promotion-preparation-develop
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    name: Consolidate development patches
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.plan.outputs.version }}
+      changelog_base64: ${{ steps.plan.outputs.changelog_base64 }}
+      expected_head: ${{ steps.head.outputs.sha }}
+    steps:
+      - name: Require develop
+        env:
+          SOURCE_REF: ${{ github.ref }}
+        run: test "$SOURCE_REF" = refs/heads/develop
+      - uses: actions/checkout@v5
+        with:
+          ref: develop
+      - name: Capture planned commit
+        id: head
+        env:
+          DISPATCH_SHA: ${{ github.sha }}
+        run: |
+          sha="$(git rev-parse HEAD)"
+          test "$sha" = "$DISPATCH_SHA"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+      - name: Calculate promotion and consolidate notes
+        id: plan
+        env:
+          FROM_VERSION: ${{ inputs.from_version }}
+          BUMP: ${{ inputs.bump }}
+        run: |
+          python3 .github/scripts/prepare_promotion.py --from-version "$FROM_VERSION" --bump "$BUMP" --output-dir "$RUNNER_TEMP/promotion"
+          cat "$RUNNER_TEMP/promotion/notes.md" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: promotion-plan-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/promotion/
+          retention-days: 14
+
+  prepare:
+    name: Validate and prepare promotion on develop
+    needs: plan
+    permissions:
+      contents: write
+    uses: ./.github/workflows/prepare_version.yaml
+    with:
+      version: ${{ needs.plan.outputs.version }}
+      changelog_base64: ${{ needs.plan.outputs.changelog_base64 }}
+      expected_head: ${{ needs.plan.outputs.expected_head }}
+      promotion: true
