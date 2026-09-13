@@ -82,6 +82,8 @@ class CP0Tests(unittest.TestCase):
     def test_experiment_is_manual_and_upload_requires_successful_full_ci(self):
         workflow = yaml.load((ROOT / '.github/workflows/cp0_publication.yaml').read_text(encoding='utf-8'), Loader=yaml.BaseLoader)
         self.assertEqual(set(workflow['on']), {'workflow_dispatch'})
+        checkout = next(step for step in workflow['jobs']['validate']['steps'] if step.get('uses', '').startswith('actions/checkout@'))
+        self.assertEqual(checkout['with']['ref'], 'master')
         self.assertEqual(workflow['concurrency'], {'group': 'pub-dev-release', 'cancel-in-progress': 'false'})
         self.assertEqual(workflow['jobs']['publish']['needs'], ['validate', 'ci'])
         self.assertEqual(workflow['jobs']['prepare_tag']['needs'], 'validate')

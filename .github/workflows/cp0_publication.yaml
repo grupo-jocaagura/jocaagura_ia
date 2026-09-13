@@ -56,7 +56,7 @@ jobs:
           esac
       - uses: actions/checkout@v5
         with:
-          ref: ${{ inputs.expected_sha }}
+          ref: master
           fetch-depth: 0
           persist-credentials: false
       - name: Require the current merged release candidate
