@@ -266,6 +266,7 @@ jobs:
       - name: Test workflow release logic
         run: |
           python3 -m pip install --disable-pip-version-check -r .github/scripts/requirements.txt
+          python3 .github/scripts/release_policy.py --metadata-only
           python3 -m unittest discover -s .github/scripts/tests -v
 
       - name: Validate GitHub Actions workflows

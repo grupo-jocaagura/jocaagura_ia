@@ -15,6 +15,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / ".github/scripts"))
 from release_notes import release_notes
+from prepare_promotion import promotion_plan
 
 WORKFLOW = yaml.load(
     (ROOT / ".github/workflows/prepare_version.yaml").read_text(encoding="utf-8"),
@@ -117,6 +118,20 @@ class PrepareVersionTests(unittest.TestCase):
         self.changelog.write_text("# Changelog\n\n## Unreleased\n")
         code, outputs = self.run_prepare()
         self.assertEqual((code, outputs["state"]), (1, "UNRELEASED_EMPTY"))
+
+    def test_promotion_uses_patch_history_when_unreleased_is_empty(self):
+        self.pubspec.write_text("name: fixture\nversion: 0.0.3\n", encoding="utf-8")
+        history = "\n## [0.0.3] - 2026-09-12\n\n### Added\n\n- Recorded patch.\n"
+        self.changelog.write_text("# Changelog\n\n## Unreleased\n" + history, encoding="utf-8")
+        plan = promotion_plan(self.pubspec.read_text(), self.changelog.read_text(), "0.0.3", "minor")
+        with patch.dict(os.environ, {"PROMOTION": "true"}):
+            code, outputs = self.run_prepare(plan["version"], notes=plan["notes"])
+        self.assertEqual((code, outputs["state"]), (0, "NEW_PREPARATION"))
+        self.assertTrue(self.changelog.read_text().endswith(history))
+        retry = promotion_plan(self.pubspec.read_text(), self.changelog.read_text(), "0.0.3", "minor")
+        with patch.dict(os.environ, {"PROMOTION": "true"}):
+            code, outputs = self.run_prepare(retry["version"], notes=retry["notes"])
+        self.assertEqual((code, outputs["state"]), (0, "VERSION_ALREADY_PREPARED"))
 
     def test_duplicate_unreleased_is_rejected(self):
         self.changelog.write_text(CHANGELOG + "\n## Unreleased\n")

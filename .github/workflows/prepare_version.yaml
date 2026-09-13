@@ -1,6 +1,20 @@
 name: Prepare version
 
 on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+      changelog_base64:
+        required: true
+        type: string
+      expected_head:
+        required: true
+        type: string
+      promotion:
+        type: boolean
+        default: false
   workflow_dispatch:
     inputs:
       version:
@@ -49,6 +63,7 @@ jobs:
       TARGET_VERSION: ${{ inputs.version }}
       CHANGELOG_INPUT_BASE64: ${{ inputs.changelog_base64 }}
       GH_TOKEN: ${{ github.token }}
+      PROMOTION: ${{ inputs.promotion }}
 
     steps:
       - name: Start timer
@@ -66,10 +81,16 @@ jobs:
       - name: Capture develop HEAD
         id: head
         shell: bash
+        env:
+          EXPECTED_HEAD: ${{ inputs.expected_head }}
         run: |
           set -euo pipefail
 
           HEAD_OID="$(git rev-parse HEAD)"
+          if [[ -n "$EXPECTED_HEAD" && "$HEAD_OID" != "$EXPECTED_HEAD" ]]; then
+            echo "::error::develop changed after promotion planning; dispatch again with the same source version."
+            exit 1
+          fi
 
           echo "oid=${HEAD_OID}" >> "$GITHUB_OUTPUT"
           echo "Canonical develop HEAD: ${HEAD_OID}"
@@ -386,7 +407,7 @@ jobs:
               and not line.lstrip().startswith("#")
           ]
 
-          if not material_lines:
+          if not material_lines and os.environ.get("PROMOTION") != "true":
               fail(
                   "UNRELEASED_EMPTY",
                   "A new version cannot be prepared because ## Unreleased "

@@ -1,14 +1,12 @@
-name: jocaagura_ia
-description: A starting point for Dart libraries or applications.
-version: 0.0.0
-# repository: https://github.com/my_org/my_repo
+name: jocaagura_ai
+description: >-
+  Pure Dart domain contracts for local AI inference and model lifecycle management,
+  with immutable JSON models and runtime-independent interfaces.
+version: 0.1.0
+repository: https://github.com/grupo-jocaagura/jocaagura_ia
 
 environment:
   sdk: ^3.13.2
-
-# Add regular dependencies here.
-dependencies:
-  # path: ^1.9.0
 
 dev_dependencies:
   coverage: ^1.15.1
