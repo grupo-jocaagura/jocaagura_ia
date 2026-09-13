@@ -1,6 +1,11 @@
 # CP-0: Automated publishing trigger discovery
 
-Status: **PENDING — first live run stopped at local OIDC validation before upload.**
+Status: **SERVICE ACCEPTANCE VERIFIED — final pub.dev audit attribution pending.**
+
+The real 0.1.0 release succeeded via tag-ref workflow dispatch. See the
+[recorded evidence](evidence/cp0-0.1.0.json) and the successful retry below.
+Post-merge orchestration remains unimplemented; historical pending/failure
+sections below describe earlier checkpoints, not the current upload result.
 
 Issue: https://github.com/grupo-jocaagura/jocaagura_ia/issues/8
 
@@ -198,3 +203,37 @@ exception to the documented tag-immutability rule after reviewing this fix,
 integration through develop -> master and successful CI. Do not change the tag,
 downgrade OIDC configuration or retry publication automatically as part of this PR.
 Record any approved recovery and both old/new SHAs before attempting the upload.
+
+## Successful authorized recovery and real publication
+
+The maintainer explicitly authorized integrating the fix through develop -> master,
+replacing only the still-unpublished 0.1.0 tag, recording both SHAs and retrying.
+PR #15 merged into develop and PR #16 into master. All required checks passed.
+Only excluded .github tooling differs between the old and corrected commits.
+
+- Old tag commit: `8761a8e55bee5fddf64ecffb219aa7e48ff294c4`.
+- Corrected and published commit: `d60302c7ad0f65b25356fb02516fb899597e42aa`.
+- The old tag was removed using an exact-SHA lease after confirming that 0.1.0
+  was still absent from pub.dev. No other tag changed.
+- [Preparation run 34733816592](https://github.com/grupo-jocaagura/jocaagura_ia/actions/runs/34733816592)
+  recreated the tag with GITHUB_TOKEN; its publication job was skipped.
+- [Publication run 34733859146](https://github.com/grupo-jocaagura/jocaagura_ia/actions/runs/34733859146)
+  ran on `ref=v0.1.0`, passed full CI, recorded the expected immutable OIDC
+  subject, and received pub.dev's successful upload response. The run succeeded.
+- The public API confirms 0.1.0 was published at `2026-09-13T02:48:26.101144Z`.
+  Archive SHA-256: `6c5f790988184deaded67310c2ea5ef8fda6d64bdad1dd2b3e5119df89ce57f3`.
+- Independent verification downloaded the published archive, checked its hash,
+  and confirmed all **39 files** byte-match the published commit. The Dartdoc
+  interval correction is present; repository automation and companion packages
+  are excluded. This is a real publication, not a dry run or duplicate skip.
+- [GitHub Release v0.1.0](https://github.com/grupo-jocaagura/jocaagura_ia/releases/tag/v0.1.0)
+  now contains the consolidated release notes.
+
+The exact observed claims, saved configuration and run URLs are preserved in
+[evidence/cp0-0.1.0.json](evidence/cp0-0.1.0.json); no JWT is included.
+This demonstrates live pub.dev acceptance of workflow_dispatch on a matching tag
+created by GITHUB_TOKEN, without alternate credentials or an external service.
+The available browser cannot read the authenticated pub.dev audit log; its
+attribution to run 34733859146 was requested from the maintainer to complete the
+agreed evidence record. Automatic post-merge orchestration remains a subsequent
+implementation step. Never re-upload 0.1.0 or move its now-published tag.
