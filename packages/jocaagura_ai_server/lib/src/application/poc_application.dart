@@ -25,9 +25,9 @@ ModelAiRequest smokeRequest() => ModelAiRequest(
   requestId: 'offline-poc-1',
   modelId: LocalAiGateway.modelId,
   messages: <ModelAiMessage>[
-    ModelAiMessage(
+    ModelAiMessage.text(
       role: EnumAiMessageRole.user,
-      content: 'Respond only with OK',
+      text: 'Respond only with OK',
     ),
   ],
   options: ModelAiGenerationOptions(

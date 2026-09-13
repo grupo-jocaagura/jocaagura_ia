@@ -9,13 +9,32 @@ HTTP controller -> ModelAiRequest -> AiGateway -> LocalAiGateway -> LiteRT-LM CP
 direct smoke --------------------------^                          -> local Gemma
 ```
 
-This POC is intentionally limited to `gemma-4-e2b-poc`: one user text message
+This POC is intentionally limited to `gemma-4-e2b-poc`: one user message with one text part
 (up to 4096 characters), `maxOutputTokens` 1..128 (null defaults to 32),
 `temperature` 0 (null defaults to 0), and empty `stopSequences`. Other IDs return
 `modelUnavailable`; unsupported request shapes/options return `invalidRequest`.
 The native sampler uses top-k 1, top-p 1 and seed 42 with thinking disabled.
 The local model bundle's chat template is used; no prompt/output rewrite forces
-the expected `OK` answer. Multimodal payloads, tools and cloud fallback are absent.
+the expected `OK` answer. Image execution, tools and cloud fallback are absent.
+
+The companion migration in [issue #10](https://github.com/grupo-jocaagura/jocaagura_ia/issues/10),
+paired with domain issue #7, uses `ModelAiMessage.text` and explicitly
+extracts its single `ModelAiTextPart`. Images and multipart messages return
+`unsupportedCapability` before opening the model file or creating an engine;
+they are never flattened or partially ignored. Text role/option policies retain
+their existing `invalidRequest` mapping. This migration does not certify images
+or broaden the POC. See the core [content contract](../../doc/content.md).
+
+### Companion migration validation
+
+Verified with Dart 3.13.2 on Windows after external review: 27 mocked-engine and
+HTTP-handler tests pass, with 136/137 executable `lib` lines covered (99.27%).
+Images and multipart input reject before model-file access/engine creation,
+including HTTP 422; legacy textual and canonical-parts bodies remain compatible.
+The uncovered line constructs the default native engine; mocks do not certify
+native inference. No model weights or real image execution are needed for these
+checks. The companion commit is reviewed together with the core commit; its
+coverage is evaluated independently. Prior text-only POC evidence is unchanged.
 
 ## Prepare the environment
 
@@ -78,12 +97,15 @@ report wraps the payload for the command; `AiResult` has no serialization API.
 `serve` listens only on `127.0.0.1:8080`. Call it from another terminal:
 
 ```powershell
-$body = '{"requestId":"http-poc-1","modelId":"gemma-4-e2b-poc","messages":[{"role":"user","content":"Respond only with OK"}],"options":{"maxOutputTokens":32,"temperature":0,"stopSequences":[]}}'
+$body = '{"requestId":"http-poc-1","modelId":"gemma-4-e2b-poc","messages":[{"role":"user","parts":[{"type":"text","text":"Respond only with OK","metadata":{}}]}],"options":{"maxOutputTokens":32,"temperature":0,"stopSequences":[]}}'
 Invoke-RestMethod -Uri http://127.0.0.1:8080/v1/inference -Method Post -ContentType application/json -Body $body
 ```
 
 The controller decodes `ModelAiRequest.fromJson`, calls the injected gateway,
 and returns `ModelAiResponse.toJson()` (200) or `ModelAiFailure.toJson()`:
+
+Legacy textual bodies using `content` instead of `parts` remain readable. A
+message containing both keys is rejected. New domain writers emit only `parts`.
 
 | Failure | HTTP |
 | --- | --- |
