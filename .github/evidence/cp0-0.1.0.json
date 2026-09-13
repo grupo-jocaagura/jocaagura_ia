@@ -1,0 +1,61 @@
+{
+  "status": "passed",
+  "package": "jocaagura_ai",
+  "version": "0.1.0",
+  "publishing_configuration": {
+    "repository": "grupo-jocaagura/jocaagura_ia",
+    "tag_pattern": "v{{version}}",
+    "push": true,
+    "workflow_dispatch": true,
+    "required_environment": null,
+    "source": "maintainer screenshot and save confirmation"
+  },
+  "tag_preparation_run": "https://github.com/grupo-jocaagura/jocaagura_ia/actions/runs/34733816592",
+  "publication_run": "https://github.com/grupo-jocaagura/jocaagura_ia/actions/runs/34733859146",
+  "publication_job_id": "103661783768",
+  "github_release": "https://github.com/grupo-jocaagura/jocaagura_ia/releases/tag/v0.1.0",
+  "observed_claims": {
+    "iss": "https://token.actions.githubusercontent.com",
+    "aud": "https://pub.dev",
+    "event_name": "workflow_dispatch",
+    "ref_type": "tag",
+    "ref": "refs/tags/v0.1.0",
+    "repository": "grupo-jocaagura/jocaagura_ia",
+    "repository_owner": "grupo-jocaagura",
+    "sha": "d60302c7ad0f65b25356fb02516fb899597e42aa",
+    "repository_id": "1367412398",
+    "repository_owner_id": "193098028",
+    "sub": "repo:grupo-jocaagura@193098028/jocaagura_ia@1367412398:ref:refs/tags/v0.1.0",
+    "run_id": "34733859146",
+    "run_attempt": "1",
+    "workflow_ref": "grupo-jocaagura/jocaagura_ia/.github/workflows/cp0_publication.yaml@refs/tags/v0.1.0",
+    "environment": null,
+    "exp": 1789268002
+  },
+  "server_result": "Successfully uploaded jocaagura_ai version 0.1.0",
+  "published": "2026-09-13T02:48:26.101144Z",
+  "archive_sha256": "6c5f790988184deaded67310c2ea5ef8fda6d64bdad1dd2b3e5119df89ce57f3",
+  "archive_validation": {
+    "files_byte_equal_to_release_commit": 39,
+    "dartdoc_interval_fix_present": true
+  },
+  "tag_recovery": {
+    "maintainer_authorized": true,
+    "old_sha": "8761a8e55bee5fddf64ecffb219aa7e48ff294c4",
+    "new_sha": "d60302c7ad0f65b25356fb02516fb899597e42aa",
+    "removal": "exact-SHA git force-with-lease deletion",
+    "creation": "GITHUB_TOKEN in prepare-tag workflow"
+  },
+  "first_attempt_before_recovery": "https://github.com/grupo-jocaagura/jocaagura_ia/actions/runs/34733145670",
+  "audit_log_attribution": {
+    "confirmed_by": "maintainer supplied pub.dev activity-log entry",
+    "url": "https://pub.dev/packages/jocaagura_ai/activity-log",
+    "package": "jocaagura_ai",
+    "version": "0.1.0",
+    "publisher": "jocaagura.com",
+    "run_id": "34733859146",
+    "commit": "d60302c7ad0f65b25356fb02516fb899597e42aa",
+    "note": "The activity-log prose says pushing revision; the recorded GitHub event and OIDC claim are workflow_dispatch."
+  },
+  "post_merge_orchestration": "implemented in release_after_merge.yaml; activation requires merge into develop then master"
+}
