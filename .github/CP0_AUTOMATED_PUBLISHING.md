@@ -1,6 +1,6 @@
 # CP-0: Automated publishing trigger discovery
 
-Status: **PENDING — automatic post-merge publishing is not implemented.**
+Status: **PENDING — package settings confirmed; live OIDC acceptance is still unverified.**
 
 Issue: https://github.com/grupo-jocaagura/jocaagura_ia/issues/8
 
@@ -22,9 +22,12 @@ Issue: https://github.com/grupo-jocaagura/jocaagura_ia/issues/8
   `workflow_dispatch`, requires `ref_type == tag`, matches `refs/tags/` plus the
   configured version pattern, and checks the configured repository/environment.
   An upstream commit does not identify the exact deployed pub.dev revision.
-- The package Admin page required Google sign-in in the available browser;
-  its actual publishing configuration could not be inspected. No GitHub OIDC
-  run against this package has been performed in this checkpoint.
+- Initially, the available browser could not inspect the package Admin page.
+  The maintainer subsequently supplied a screenshot and confirmed saving these
+  settings: GitHub publishing enabled, repository `grupo-jocaagura/jocaagura_ia`,
+  pattern `v{{version}}`, both `push` and `workflow_dispatch` enabled, and no
+  required GitHub Environment. This is configuration evidence supplied by the
+  maintainer, not evidence of service acceptance. No live OIDC upload has run.
 
 ## Reconciliation with develop 0.0.3
 
@@ -100,9 +103,52 @@ Never print or store the complete JWT, bearer token or authorization headers.
 
 ## Fail-closed decision
 
-While CP-0 is pending, or if pub.dev rejects this path, the publisher accepts
-only a human-pushed version tag. No workflow creates tags or dispatches the
-publisher after a merge. There is no variable that bypasses this checkpoint.
+While CP-0 is pending, the regular publisher accepts only a human-pushed
+version tag. The separate, explicitly invoked CP-0 experiment below can create
+one candidate tag and test dispatch publication. No workflow creates tags or
+dispatches a publisher automatically after a merge. There is no variable that
+marks CP-0 passed or enables post-merge publication.
 Do not add a PAT, service account, external service or alternate credential.
 The fallback is an explicitly human-pushed release tag until the constraint
 is revised. Follow the procedure in [CI_CD.md](CI_CD.md).
+## Controlled live experiment for 0.1.0
+
+The `CP-0 controlled publication` workflow is a one-time manual experiment, not
+post-merge orchestration. Configuration is now confirmed; **CP-0 remains pending**.
+Preparing the experiment or obtaining an OIDC token does not complete CP-0.
+
+1. Merge the experiment PR into `develop`, then a new official `develop -> master`
+   PR. Both branches must contain `cp0_publication.yaml`. Use the **new** merged
+   release commit, not the earlier PR #12 SHA (which lacks the experiment).
+   Keep the candidate at 0.1.0: these changes affect excluded `.github/` tooling.
+2. After required CI passes, review the exact commit, archive dry run, unpublished
+   version and configuration. Explicitly agree to use the real 0.1.0 release as
+   the authorization test before running the `publish` operation.
+3. Dispatch `cp0_publication.yaml` on `develop` with `operation=prepare-tag` and
+   `expected_sha=<new exact master merge SHA>`. It checks release provenance and
+   creates `v0.1.0` with **GITHUB_TOKEN**. The token's tag push does not trigger the
+   regular publisher. No workflow is dispatched by this step. Record its run URL
+   as evidence of who created the tag. A same-SHA existing tag is only checked,
+   not recreated; retain its original creation evidence. A conflicting tag fails.
+4. Separately dispatch that workflow with **ref=v0.1.0**, `operation=publish`, the
+   same `expected_sha`, and `confirmation=publish jocaagura_ai 0.1.0`.
+   This is a REAL upload, not a dry run. It requires full CI, exact tag/SHA,
+   current master, merged PR provenance and an unpublished version. It records
+   only an allowlist of OIDC claims from the official setup-dart token, then
+   publishes with that same identity. It uses no required Environment, matching
+   the saved configuration. No PAT, persistent token or extra service is added.
+5. Save both workflow URLs, the sanitized claims, successful upload step, public
+   version/archive hash confirmation, and pub.dev Admin audit-log attribution.
+   Only that combined service evidence can complete CP-0. Update this record and
+   issue #8 before implementing any automatic post-merge orchestration.
+
+If authorization is rejected, stop the experiment and leave post-merge publishing
+unimplemented. Investigate the actual error; never weaken the configuration or
+substitute credentials. If the upload succeeds but a later verification fails,
+inspect the existing version and pub.dev audit log; do not rerun an upload or
+claim an existing version proves this run's authorization. Preflight intentionally
+fails for already-published 0.1.0. Do not delete, move or overwrite the tag to retry.
+The regular human-pushed-tag workflow remains the fallback for an unpublished
+release when CP-0 cannot be accepted; an existing experimental tag requires an
+explicit recovery decision, not recreation. GitHub Release creation is a separate
+follow-up after a verified experimental publication.

@@ -126,8 +126,9 @@ CI after this PR reaches develop; this PR therefore retains `version: 0.0.3`.
 ## CP-0 and publishing
 
 [CP-0](CP0_AUTOMATED_PUBLISHING.md) is **pending**. Upstream code supports
-`workflow_dispatch` on tags, but the live package configuration and OIDC
-acceptance have not been verified. Automatic post-merge orchestration is not
+`workflow_dispatch` on tags. The maintainer has now confirmed saving the package
+configuration for both events, without a required Environment; live OIDC
+acceptance has not been verified. Automatic post-merge orchestration is not
 implemented. No PAT, service account, external service or alternate credential
 may be introduced to bypass the checkpoint.
 
@@ -200,3 +201,7 @@ were already at their maximum.
 References: [Dart publishing](https://dart.dev/tools/pub/automated-publishing),
 [GitHub token event rules](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow),
 [published analysis log](https://pub.dev/packages/jocaagura_ai/score/log.txt).
+
+The manually invoked [CP-0 live experiment](CP0_AUTOMATED_PUBLISHING.md#controlled-live-experiment-for-010)
+now provides a separate tag-preparation step and an explicitly confirmed real
+0.1.0 dispatch publication. It does not run after merges or enable post-merge automation.
