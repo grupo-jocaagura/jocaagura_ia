@@ -88,7 +88,7 @@ def preflight():
     release_notes(spec, Path("CHANGELOG.md").read_text(encoding="utf-8"), TAG)
     require_merged_commit(sha)
     package = read_json(f"https://pub.dev/api/packages/{PACKAGE}", missing_ok=True)
-    if publication_state(VERSION, package) != "ready_for_human_tag":
+    if publication_state(VERSION, package) != "ready_to_publish":
         raise ValueError("CP-0 requires an unpublished candidate; an existing version cannot prove authorization")
     print("Validated unpublished 0.1.0 and exact merged release provenance. CP-0 remains pending.")
 

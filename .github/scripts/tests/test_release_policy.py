@@ -72,9 +72,9 @@ class ReleasePolicyTests(unittest.TestCase):
 
     def test_absent_existing_and_new_versions(self):
         self.assertEqual(publication_state("0.1.0", None), "manual_first_publication")
-        self.assertEqual(publication_state("0.1.0", package("0.0.1")), "ready_for_human_tag")
+        self.assertEqual(publication_state("0.1.0", package("0.0.1")), "ready_to_publish")
         self.assertEqual(publication_state("0.1.0", package("0.0.1", "0.1.0")), "already_published")
-        self.assertEqual(publication_state("0.1.0", package("0.1.0-rc.1")), "ready_for_human_tag")
+        self.assertEqual(publication_state("0.1.0", package("0.1.0-rc.1")), "ready_to_publish")
         # Numeric comparison, not lexicographic comparison.
         with self.assertRaises(ValueError):
             publication_state("0.2.0", package("0.10.0"))
@@ -139,16 +139,12 @@ class ReleasePolicyTests(unittest.TestCase):
             with self.subTest(required=required, release=release, base=base, tests=tests):
                 self.assertEqual(result.returncode, expected, result.stderr)
 
-    def test_regular_publisher_has_no_dispatch_or_postmerge_trigger(self):
+    def test_publisher_supports_verified_tag_dispatch_and_serializes_uploads(self):
         publish = yaml.load((ROOT / ".github/workflows/publish.yaml").read_text(encoding="utf-8"), Loader=yaml.BaseLoader)
-        self.assertEqual(set(publish["on"]), {"push"})
+        self.assertEqual(set(publish["on"]), {"push", "workflow_dispatch"})
         self.assertEqual(publish["permissions"], {"contents": "read"})
         self.assertEqual(publish["concurrency"]["cancel-in-progress"], "false")
         self.assertNotIn("github.ref", publish["concurrency"]["group"])
-        for path in (ROOT / ".github/workflows").glob("*.yaml"):
-            text = path.read_text(encoding="utf-8")
-            self.assertNotIn("gh workflow run publish", text)
-            self.assertNotIn("/dispatches", text)
 
 
 if __name__ == "__main__":

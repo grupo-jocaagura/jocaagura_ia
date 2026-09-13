@@ -1,8 +1,8 @@
 # jocaagura_ai CI/CD
 
 The root package is the SDK-only `jocaagura_ai` domain. Its first manual pub.dev
-release is **0.0.2**; develop is at **0.0.3**, and the selected **minor**
-promotion will prepare **0.1.0** in CI. The integration consumer
+release was **0.0.2**. The first CI minor promotion **0.0.3 -> 0.1.0**
+was published successfully through GitHub OIDC and scored **160/160**. The integration consumer
 `packages/jocaagura_ai_server` remains nonpublishable and excluded by `.pubignore`.
 Release validation needs no running service, model weights or real inference.
 
@@ -62,122 +62,111 @@ compatible newer stable SDK. Update setup-dart steps if the minimum changes.
 
 ## Development patches and public promotions
 
-Patches on `develop` record incremental progress and maintain their own dated
-changelog entries. They are not automatic public releases. A public promotion
-explicitly chooses **minor** or **major**; the patch component becomes zero.
-For the current batch, **0.0.3 -> 0.1.0** is the chosen minor promotion. A major
-promotion from 0.0.3 would instead produce **1.0.0**. The choice is deliberate;
-CI does not infer compatibility from commit messages.
+Patches on `develop` record incremental progress with their own dated changelog
+entries. Public promotions explicitly select **minor** or **major**, resetting
+the patch component to zero. CI does not infer compatibility from commit messages.
+The completed first promotion consolidated 0.0.1, 0.0.2, 0.0.3 and Unreleased into
+0.1.0 while preserving historical entries. Never upload those versions again.
 
-The API confirms that 0.0.3 already exists on pub.dev from the earlier manual
-flow. Do not upload it again. The new automated publication policy rejects patch
-versions, including already-published patches, and requires preparation of a
-minor/major version before a PR can promote to `master`.
+### Prepare the next promotion
 
-### Prepare the next promotion in GitHub Actions
+1. Record development patch versions using **Prepare version** on `develop`.
+   For example, a future 0.1.1 or 0.1.2 records progress toward the next promotion.
+2. Run **Prepare promotion** on `develop` with the exact current `from_version`
+   and choose `bump: minor` or `major`. For example, **0.1.2 -> 0.2.0** is a minor
+   bump and **0.1.2 -> 1.0.0** is a major bump; these are examples, not existing releases.
+3. The planner consolidates Unreleased plus patches after the latest preceding
+   X.Y.0 promotion. It retains section names and source-version labels, preserves
+   historical changelog blocks, and stores a reviewable notes/plan artifact.
+4. Full CI and expected-HEAD checks precede the GitHub-signed version/changelog
+   commit. Concurrent changes fail closed. A retry with the same source/bump
+   recognizes an already-prepared target instead of bumping it again. New
+   Unreleased contributions after preparation require review.
+5. Open the official **develop -> master** PR. Release readiness checks the
+   minor/major version, provenance, metadata, changelog, pub.dev and dry run.
+6. Merge after required checks pass. **Release after master merge** then handles
+   tag creation and publication dispatch as described below.
 
-1. Merge this implementation PR into `develop`; its workflow must exist on that
-   default branch before GitHub allows dispatch.
-2. Open **Prepare promotion**, select `develop`, enter `from_version: 0.0.3`,
-   and choose `bump: minor`. CI calculates **0.1.0**. For later promotions,
-   explicitly supply the development version and select minor or major.
-3. The planner groups `Unreleased` and patch entries since the latest preceding
-   `X.Y.0` promotion. It preserves Added/Changed/Fixed/etc. sections and labels
-   each contribution with its original version. Here it collects **0.0.1,
-   0.0.2 and 0.0.3**, plus pending release/Dartdoc changes. Previous promotion
-   contents are not duplicated into later promotions; major promotions use the
-   same boundary. Historical changelog blocks are never deleted or rewritten.
-4. The workflow stores a reviewable notes/plan artifact, checks that its commit
-   matches the dispatch commit, and calls the existing **Prepare version** flow.
-   That flow runs full CI, checks the expected develop HEAD, prepares the version
-   and dated consolidated changelog, clears `Unreleased`, and creates a
-   GitHub-signed commit. The existing expected-HEAD API write also prevents
-   overwriting concurrent work after validation.
-5. If develop moved during planning/CI, dispatch again with the same source
-   version after reviewing the change. Repeating the same dispatch inputs after
-   preparation recognizes 0.1.0 and performs an idempotent no-op; it never bumps
-   blindly to 0.2.0. New Unreleased contributions after preparation require review.
-6. Open the release PR **develop -> master** only after version preparation.
-   `Release readiness` rejects direct patch promotion and reports eligibility
-   for the prepared minor/major version. It checks the version, changelog,
-   repository identity and publication dry run alongside all existing CI gates.
-7. CP-0 must pass before post-merge publication orchestration is implemented.
-   Until then, merging a PR does not create a tag or publish. The documented
-   human-tag fallback is available for a deliberately prepared release.
+`Prepare version` remains the lower-level entry point for recording explicit
+patch versions and Base64 notes. Use **Prepare promotion** for public minor/major
+bumps and consolidation. If branch rules block version commits, use a normal PR;
+do not weaken protections. A GITHUB_TOKEN version push does not trigger branch
+CI, but the release PR and publishing pipeline run CI again.
 
-`Prepare version` remains the lower-level entry point for recording development
-versions with an explicit version and canonical Base64 notes. Use **Prepare
-promotion** for the public minor/major bump and automatic note consolidation.
-If branch rules prevent the version commit, prepare the generated version/notes
-through a normal PR into develop; do not weaken protections. The version commit
-uses `GITHUB_TOKEN`, so its push does not start another CI run automatically;
-the release PR and eventual human-pushed tag run CI again.
-
-A local read-only preview of the exact promotion planner is:
+A local read-only preview (substitute the actual current development version):
 
 ```sh
-python .github/scripts/prepare_promotion.py --from-version 0.0.3 --bump minor --output-dir .dart_tool/promotion-preview
+python .github/scripts/prepare_promotion.py --from-version 0.1.2 --bump minor --output-dir .dart_tool/promotion-preview
 ```
 
-The preview produces `plan.json` and `notes.md`, without changing package files,
-creating a tag, committing, or uploading to pub.dev. The version bump occurs in
-CI after this PR reaches develop; this PR therefore retains `version: 0.0.3`.
+The preview writes plan.json and notes.md only. The actual bump occurs in CI
+before the release PR, not after its merge. This implementation retains the
+already-published version 0.1.0; its automation changes remain under Unreleased.
 
-## CP-0 and publishing
+## Automated publication after merge
 
-[CP-0](CP0_AUTOMATED_PUBLISHING.md) is **pending**. Upstream code supports
-`workflow_dispatch` on tags. The maintainer has now confirmed saving the package
-configuration for both events, without a required Environment; live OIDC
-acceptance has not been verified. Automatic post-merge orchestration is not
-implemented. No PAT, service account, external service or alternate credential
-may be introduced to bypass the checkpoint.
+[CP-0 passed](CP0_AUTOMATED_PUBLISHING.md#cp-0-completion): live pub.dev accepted
+workflow_dispatch on a GITHUB_TOKEN-created tag, and the maintainer confirmed
+matching audit attribution. Exact claims, configuration and archive evidence are
+in [evidence/cp0-0.1.0.json](evidence/cp0-0.1.0.json).
 
-The supported fallback is a human-pushed tag. Once the release PR has merged:
+1. A push to `master` starts **Release after master merge**. The trusted master
+   checkout must equal the event SHA. The exact commit must be the merge result
+   of an official develop -> master PR; direct commits and unrelated/fork PRs fail.
+2. The read-only plan requires completed CP-0 evidence, a valid minor/major
+   version and changelog, and the live pub.dev version state. Existing versions
+   finish as `already_published` before tag inspection or mutation. An absent
+   package, patch version, regression or service error blocks the release.
+3. An unpublished candidate must pass the dry run and full CI. Only the final
+   dispatch job receives contents:write and actions:write. It repeats provenance,
+   current-master and public-version checks immediately before writing.
+4. GITHUB_TOKEN creates `vX.Y.0` at the validated merge SHA. An existing tag must
+   resolve to that exact commit, including annotated tags; conflicts fail without
+   replacement. The workflow then dispatches **Publish package** with that tag
+   as the ref. No PAT, service account or additional service is used.
+5. **Publish package** accepts tag-ref workflow_dispatch or a human tag push.
+   It validates provenance/version again, runs full CI and dry run, and uses the
+   official Dart reusable OIDC publisher. GitHub Release creation follows upload
+   success, or updates release notes when the same tagged version already exists.
 
-1. In pub.dev Admin, enable publishing from GitHub Actions for
-   `grupo-jocaagura/jocaagura_ia`, pattern `v{{version}}`, with **push events**
-   enabled. The present reusable publisher does not set an Environment. If the
-   package requires one, configure that exact Environment in GitHub and pass it
-   to the publisher before use; do not remove an existing protection to make a
-   release work. Complete the CP-0 verification separately before enabling any
-   post-merge dispatch path.
-2. Fetch `master` and tags. Locate the exact `merge_commit_sha` of the merged
-   official release PR, and check out that commit in a clean worktree.
-3. Run release validation/CI and the publication dry run. Review the archive
-   list: it must contain `lib/jocaagura_ai.dart`, the root example, README,
-   changelog and license; it must exclude `packages/`, models, native runtimes,
-   private config, and build/test reports.
-4. For a genuinely unpublished, deliberately prepared version, create its
-   `vX.Y.0` tag on that exact commit and push the tag explicitly as a human
-   maintainer. Version 0.0.3 already exists: do not create or repoint its tag to
-   imply that new unshipped changes belong to its published archive.
-   If the tag exists, verify its peeled commit; never overwrite or re-create it
-   to recover a failed release. No automation creates release tags in this stage.
-5. `Publish package` verifies the human push event, tag/version/changelog, exact
-   merged PR provenance and membership in `master` history. It checks pub.dev,
-   performs a dry run and full CI, then uses the official Dart OIDC workflow.
-   GitHub Release creation follows successful publication, or skips the upload
-   if that version is already present. Uploads are serialized across versions.
+The GITHUB_TOKEN-created tag push does not itself run another push workflow.
+The explicit dispatch is necessary. Publisher runs share the global
+`pub-dev-release` concurrency group; the orchestrator uses a different group so
+waiting publishers cannot deadlock their dispatcher. Duplicate orchestration runs
+of the same commit serialize. Public version checks reject regressions even if
+multiple releases are prepared close together. Never bypass a failed or stale run.
 
-A 404 for the entire package yields `manual_first_publication`; a tag run then
-stops. Authentication errors, network errors, malformed responses and server
-failures block publishing. Existing minor/major versions skip upload; a candidate older
-than another published stable version is rejected, even if previously published.
-Only an exact merged official `develop -> master` commit may be released;
-an arbitrary ancestor of `master` is insufficient.
+The dispatch workflow must exist on the default branch (`develop`) and target
+tag. Keep pub.dev configured for repository `grupo-jocaagura/jocaagura_ia`, pattern
+`v{{version}}`, workflow_dispatch and push enabled, with no required Environment.
+If an Environment becomes required, configure the same value in the publisher;
+do not remove an existing protection. The verified OIDC subject includes immutable
+repository and owner IDs; the official publisher handles token acquisition.
 
-### Recovery and already-published versions
+### Recovery
 
-- `0.0.2` and `0.0.3` are already published. Do not publish them again, fabricate
-  merge provenance, or repoint a historical tag. Review the original
-  validated commit separately if historical release metadata is needed.
-- If publication fails ambiguously, rerun the **entire workflow** so eligibility
-  queries pub.dev again before uploading. A full rerun of a successfully
-  published version skips the upload.
-- If only GitHub Release creation fails after publication, rerun that failed job;
-  it creates or updates release notes without uploading the package again.
-- A conflicting tag, invalid source PR, failed CI, or API error requires fixing
-  the underlying cause. Never move a release tag or bypass CP-0 as recovery.
+- If master changes before planning or dispatch, the run fails before a new tag
+  is created. Evaluate the current master candidate; do not override the SHA check.
+- If dispatch fails after tag creation, rerun **Release after master merge** on
+  `master` while it still points to that candidate. The existing matching tag is
+  preserved and dispatch is retried. A successful API dispatch only means queued;
+  inspect **Publish package** for the actual publication result.
+- If publication fails, rerun the **entire Publish package workflow**, so it checks
+  pub.dev again. Do not rerun only the upload job after an ambiguous result.
+  If upload succeeded but GitHub Release creation failed, rerun only that final job.
+- Existing published versions skip uploads. The initial 0.1.0 activation merge
+  therefore leaves its published tag and archive untouched even though master has
+  advanced. Its immutable tag remains at d60302c7ad0f65b25356fb02516fb899597e42aa.
+- For an existing older candidate after master advanced, a maintainer can dispatch
+  **Publish package** directly on its immutable tag; all provenance/version/CI
+  gates still apply. The workflow must be present at that tag. Old pre-dispatch
+  tags do not retroactively receive new workflow definitions.
+- An explicitly human-pushed tag remains the fallback for an unpublished prepared
+  release at the exact official merge commit. Never move/delete a release tag.
+  The recorded one-time pre-publication recovery of 0.1.0 is not a standing exception.
+- Merge release PRs as a maintainer. GitHub does not generate push/closed-PR runs
+  for merges made with GITHUB_TOKEN. If such a merge occurs, explicitly dispatch
+  **Release after master merge** on master rather than introducing other credentials.
 
 ## pub.dev diagnostics and package identity
 
@@ -194,14 +183,10 @@ report. Keep `name: jocaagura_ai`, its public entrypoint and imports unchanged.
 The analysis log inspected during initial discovery reported an unresolved
 Dartdoc reference for `[0, 1]`. This PR escapes that interval as code. Regenerating
 Dartdoc must report zero warnings and errors. Published archives cannot be edited;
-the correction remains under `Unreleased` and will reach pub.dev in a future
-unpublished version selected by the maintainer. Do not claim to have increased points that
+the correction is present in the published 0.1.0 archive, whose analysis
+reports zero Dartdoc warnings/errors and 160/160 points. Do not claim to have increased points that
 were already at their maximum.
 
 References: [Dart publishing](https://dart.dev/tools/pub/automated-publishing),
 [GitHub token event rules](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow),
 [published analysis log](https://pub.dev/packages/jocaagura_ai/score/log.txt).
-
-The manually invoked [CP-0 live experiment](CP0_AUTOMATED_PUBLISHING.md#controlled-live-experiment-for-010)
-now provides a separate tag-preparation step and an explicitly confirmed real
-0.1.0 dispatch publication. It does not run after merges or enable post-merge automation.
