@@ -1,4 +1,4 @@
-# Initial AI domain contract
+# AI domain contract
 
 ## Scope
 
@@ -8,10 +8,11 @@ This rename does not change the domain API, enum names or serialized payloads.
 The separate `packages/jocaagura_ai_server` consumes these contracts; engine,
 transport and configuration code stay outside the core.
 
-Implement the initial pure Dart domain for local AI inference and model lifecycle
-management. No Flutter, jocaagura_domain, inference runtime, or production
+The pure Dart domain covers local AI inference and model lifecycle
+management, extended by [ordered content and declarations](content.md) (issue #7).
+No Flutter, jocaagura_domain, inference runtime, or production
 third-party dependencies are introduced. Jocaagura conventions are adopted
-without inheriting its Model base class. Streaming, multimodal payloads, remote
+without inheriting its Model base class. Streaming, real multimodal execution, remote
 inference, active execution cancellation, persistence, runtime adapters, model
 formats, inference-engine integration, and model provenance remain separate work.
 
@@ -19,12 +20,12 @@ formats, inference-engine integration, and model provenance remain separate work
 
 | Model | Fields |
 | --- | --- |
-| ModelAiMessage | role, content |
+| ModelAiMessage | role, parts (legacy content accepted on read) |
 | ModelAiGenerationOptions | maxOutputTokens?, temperature?, stopSequences |
 | ModelAiRequest | requestId, modelId, messages, options |
 | ModelAiResponse | requestId, modelId, text, finishReason, usage? |
 | ModelAiUsage | inputTokens?, outputTokens?, totalTokens? |
-| ModelAiDescriptor | id, displayName, version, capabilities, requirements, source |
+| ModelAiDescriptor | id, displayName, version, capabilities, requirements, source, contentCapabilities? |
 | ModelAiRequirements | storageBytes?, minimumMemoryBytes? |
 | ModelAiSource | type, path?, assetPath?, url?, expectedSha256? |
 | ModelAiState | modelId, status, progress?, failure? |
@@ -34,10 +35,20 @@ There is no ModelAiPrompt: requests own an ordered list of messages. Requests
 reference models by logical modelId; descriptors describe installable artifacts.
 Model versions are opaque nonblank strings, not package release versions.
 
+The extension adds `ModelAiTextPart`, `ModelAiImagePart`,
+`ModelAiInlineBytesSource`, `ModelAiLocalFileSource`, `ModelAiContentCapabilities`
+and `ModelAiContentCompatibility`. Sealed `ModelAiContentPart` and
+`ModelAiContentSource` support exhaustive matching. [content.md](content.md)
+defines their schema, pure assessor and explicit migration policy.
+
 ## Enums
 
 - EnumAiMessageRole: system, user, assistant.
 - EnumAiCapability: textGeneration.
+- EnumAiInputModality: text, image.
+- EnumAiOutputModality: text.
+- EnumAiContentSourceType: inlineBytes, localFile.
+- EnumAiContentCompatibilityStatus: meetsDeclaredConstraints, unsupported, undetermined.
 - EnumAiSourceType: localFile, bundledAsset, remoteDownload.
 - EnumAiModelStatus: notInstalled, installing, verifying, installed, loading,
   ready, unloading, removing, failed.
@@ -51,7 +62,8 @@ fail closed with FormatException; no fallback silently indicates success.
 ## Invariants
 
 - Identifiers, descriptor names/versions, and failure messages are nonblank.
-  Message content and stop sequences are nonempty; whitespace is preserved.
+  Message parts are nonempty. Text parts and stop sequences are nonempty;
+  whitespace is preserved. Response text may still be empty.
 - Requests contain at least one message; descriptors have nonempty capabilities.
 - ModelAiRequirements contains only storageBytes and minimumMemoryBytes; runtime,
   backend, accelerator, and recommended-memory fields are outside the v0 contract.
@@ -156,7 +168,7 @@ does not implement a scheduler.
 
 ## Serialization and compatibility
 
-All ten models have fromJson, toJson, copyWith, value equality, and hashCode.
+All concrete models have fromJson, toJson, copyWith, value equality, and hashCode.
 Constructors and copyWith validate at runtime with ArgumentError. fromJson
 reports invalid/missing required fields and invalid nested data as FormatException.
 Unknown object fields are ignored for additive compatibility. Required object
@@ -164,6 +176,12 @@ fields remain required even where the Dart constructor offers a default.
 Nullable fields may be absent or null. Serialization always includes nullable
 keys and uses only JSON values. Optional stopSequences defaults to an empty list
 when absent; an explicit null is invalid.
+
+For new content values, metadata defaults to {} when absent and rejects null;
+known fields from incompatible variants are rejected even when null. Unknown
+part/source/report discriminators fail closed. Content sources never perform IO.
+Null capability allowlists mean unknown support; null maxima mean no bound
+declared in that profile, not unlimited runtime resources.
 
 JSON keys and enum names are stable contracts. Existing payloads remain readable
 within the same major package version; breaking contracts need an explicit
@@ -182,7 +200,10 @@ The models use final classes/fields and defensive collections instead of the
 package:meta immutable annotation. A narrowly scoped, documented lint suppression
 on these value types avoids introducing a dependency solely for that annotation.
 
-## Definition of Done
+## Historical initial-domain checklist (issue #3)
+
+The original checklist below describes the initial milestone. Issue #7 and
+[content.md](content.md) specify the current content extension and migration.
 
 - [ ] Implement the ten ModelAi models and six EnumAi enumerations listed above.
 - [ ] Implement AiResult/AiSuccess/AiFailureResult and both interface contracts.

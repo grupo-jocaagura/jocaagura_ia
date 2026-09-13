@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:jocaagura_ai/jocaagura_ai.dart';
+import 'package:jocaagura_ai_server/src/api/inference_handler.dart';
 import 'package:jocaagura_ai_server/src/application/poc_application.dart';
 import 'package:jocaagura_ai_server/src/infrastructure/local_ai_gateway.dart';
 import 'package:llamadart/llamadart.dart';
@@ -169,6 +170,53 @@ void main() {
     );
   });
 
+  test('companion migration rejects images and multipart input before resource access', () async {
+    await model.delete(); // Rejection must precede even opening the model file.
+    int engineCreations = 0;
+    final LocalAiGateway migrated = LocalAiGateway(
+      modelPath: model.path,
+      createEngine: () {
+        engineCreations++;
+        return engine;
+      },
+    );
+    addTearDown(migrated.close);
+    final ModelAiTextPart text = ModelAiTextPart(text: 'Describe:');
+    final ModelAiImagePart image = ModelAiImagePart(
+      mimeType: 'image/png',
+      source: ModelAiLocalFileSource(path: 'does-not-exist.png'),
+    );
+    for (final List<ModelAiContentPart> parts in <List<ModelAiContentPart>>[
+      <ModelAiContentPart>[image],
+      <ModelAiContentPart>[text, image, text],
+      <ModelAiContentPart>[text, text],
+    ]) {
+      final ModelAiRequest request = smokeRequest().copyWith(
+        messages: <ModelAiMessage>[
+          ModelAiMessage(role: EnumAiMessageRole.user, parts: parts),
+        ],
+      );
+      final AiResult<ModelAiResponse> result = await migrated.infer(request);
+      expectFailure(result, EnumAiFailureCode.unsupportedCapability);
+      expect(
+        (result as AiFailureResult<ModelAiResponse>).failure.retryable,
+        isFalse,
+      );
+      final Response response = await inferenceHandler(migrated)(
+        Request(
+          'POST',
+          Uri.parse('http://localhost/v1/inference'),
+          body: jsonEncode(request.toJson()),
+        ),
+      );
+      expect(response.statusCode, 422);
+    }
+    expect(engineCreations, 0);
+    verifyNever(
+      () => engine.loadModel(any(), modelParams: any(named: 'modelParams')),
+    );
+  });
+
   test(
     'unsupported request shapes/options are rejected before engine use',
     () async {
@@ -179,17 +227,17 @@ void main() {
         ),
         request.copyWith(
           messages: <ModelAiMessage>[
-            ModelAiMessage(role: EnumAiMessageRole.system, content: 'x'),
+            ModelAiMessage.text(role: EnumAiMessageRole.system, text: 'x'),
           ],
         ),
         request.copyWith(
           messages: <ModelAiMessage>[
-            ModelAiMessage(role: EnumAiMessageRole.assistant, content: 'x'),
+            ModelAiMessage.text(role: EnumAiMessageRole.assistant, text: 'x'),
           ],
         ),
         request.copyWith(
           messages: <ModelAiMessage>[
-            ModelAiMessage(role: EnumAiMessageRole.user, content: 'x' * 4097),
+            ModelAiMessage.text(role: EnumAiMessageRole.user, text: 'x' * 4097),
           ],
         ),
         request.copyWith(
@@ -215,7 +263,7 @@ void main() {
     final AiResult<ModelAiResponse> result = await gateway.infer(
       smokeRequest().copyWith(
         messages: <ModelAiMessage>[
-          ModelAiMessage(role: EnumAiMessageRole.user, content: 'x' * 4096),
+          ModelAiMessage.text(role: EnumAiMessageRole.user, text: 'x' * 4096),
         ],
         options: ModelAiGenerationOptions(maxOutputTokens: 128),
       ),

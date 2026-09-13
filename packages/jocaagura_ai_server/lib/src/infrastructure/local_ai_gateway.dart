@@ -42,9 +42,31 @@ final class LocalAiGateway implements AiGateway {
     if (request.modelId != modelId) {
       return _failure(EnumAiFailureCode.modelUnavailable, 'Unknown model ID.');
     }
+    // Companion API migration only: this POC still accepts a single text part.
+    // Inspect every part before opening resources; never drop non-text input.
+    if (request.messages.any(
+      (ModelAiMessage message) => message.parts.any(
+        (ModelAiContentPart part) => part is! ModelAiTextPart,
+      ),
+    )) {
+      return _failure(
+        EnumAiFailureCode.unsupportedCapability,
+        'The local POC supports text input only.',
+      );
+    }
+    if (request.messages.any(
+      (ModelAiMessage message) => message.parts.length != 1,
+    )) {
+      return _failure(
+        EnumAiFailureCode.unsupportedCapability,
+        'The local POC supports exactly one text part per message.',
+      );
+    }
+    final String inputText =
+        (request.messages.first.parts.single as ModelAiTextPart).text;
     if (request.messages.length != 1 ||
         request.messages.single.role != EnumAiMessageRole.user ||
-        request.messages.single.content.length > 4096 ||
+        inputText.length > 4096 ||
         (request.options.maxOutputTokens ?? defaultOutputTokens) > 128 ||
         (request.options.temperature ?? 0) != 0 ||
         request.options.stopSequences.isNotEmpty) {
@@ -81,10 +103,7 @@ final class LocalAiGateway implements AiGateway {
       String? terminalReason;
       await for (final LlamaCompletionChunk chunk in engine.create(
         <LlamaChatMessage>[
-          LlamaChatMessage.fromText(
-            role: LlamaChatRole.user,
-            text: request.messages.single.content,
-          ),
+          LlamaChatMessage.fromText(role: LlamaChatRole.user, text: inputText),
         ],
         params: GenerationParams(
           maxTokens: limit,
