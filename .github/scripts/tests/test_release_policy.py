@@ -139,7 +139,7 @@ class ReleasePolicyTests(unittest.TestCase):
             with self.subTest(required=required, release=release, base=base, tests=tests):
                 self.assertEqual(result.returncode, expected, result.stderr)
 
-    def test_cp0_keeps_dispatch_and_postmerge_orchestration_absent(self):
+    def test_regular_publisher_has_no_dispatch_or_postmerge_trigger(self):
         publish = yaml.load((ROOT / ".github/workflows/publish.yaml").read_text(encoding="utf-8"), Loader=yaml.BaseLoader)
         self.assertEqual(set(publish["on"]), {"push"})
         self.assertEqual(publish["permissions"], {"contents": "read"})

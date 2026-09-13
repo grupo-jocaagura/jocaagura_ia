@@ -1,0 +1,140 @@
+name: CP-0 controlled publication
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: 'prepare-tag creates only the tag; publish uploads the real 0.1.0 release'
+        required: true
+        type: choice
+        options: [prepare-tag, publish]
+      expected_sha:
+        description: 'Exact 40-character merged develop-to-master release commit'
+        required: true
+        type: string
+      confirmation:
+        description: 'For publish only, enter publish jocaagura_ai 0.1.0'
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pub-dev-release
+  cancel-in-progress: false
+
+env:
+  EXPECTED_SHA: ${{ inputs.expected_sha }}
+
+jobs:
+  validate:
+    permissions:
+      contents: read
+      pull-requests: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Require an explicit CP-0 operation
+        env:
+          OPERATION: ${{ inputs.operation }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$GITHUB_EVENT_NAME" = workflow_dispatch
+          test "$GITHUB_REPOSITORY" = grupo-jocaagura/jocaagura_ia
+          case "$OPERATION" in
+            prepare-tag) test "$GITHUB_REF" = refs/heads/develop ;;
+            publish)
+              test "$GITHUB_REF" = refs/tags/v0.1.0
+              test "$GITHUB_SHA" = "$EXPECTED_SHA"
+              test "$CONFIRMATION" = 'publish jocaagura_ai 0.1.0'
+              ;;
+            *) exit 1 ;;
+          esac
+      - uses: actions/checkout@v5
+        with:
+          ref: master
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Require the current merged release candidate
+        run: |
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          test "$(git rev-parse origin/master)" = "$EXPECTED_SHA"
+          test -f .github/workflows/cp0_publication.yaml
+      - run: python3 -m pip install --disable-pip-version-check -r .github/scripts/requirements.txt
+      - name: Validate unpublished 0.1.0 and merged PR provenance
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 .github/scripts/cp0_publication.py preflight
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: '3.13.2'
+      - run: dart pub get
+      - run: dart pub publish --dry-run
+
+  prepare_tag:
+    if: inputs.operation == 'prepare-tag'
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Create the immutable CP-0 tag with GITHUB_TOKEN
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo=grupo-jocaagura/jocaagura_ia
+          test "$(gh api "repos/$repo/git/ref/heads/master" --jq .object.sha)" = "$EXPECTED_SHA"
+          refs="$(gh api "repos/$repo/git/matching-refs/tags/v0.1.0")"
+          existing="$(jq -r '.[] | select(.ref == "refs/tags/v0.1.0") | .object.sha' <<< "$refs")"
+          if [[ -n "$existing" ]]; then
+            test "$existing" = "$EXPECTED_SHA"
+          else
+            gh api --method POST "repos/$repo/git/refs" -f ref=refs/tags/v0.1.0 -f sha="$EXPECTED_SHA" --jq .ref
+          fi
+          test "$(gh api "repos/$repo/git/ref/tags/v0.1.0" --jq .object.sha)" = "$EXPECTED_SHA"
+          echo 'Tag prepared with GITHUB_TOKEN. No publisher was dispatched. CP-0 is still pending.' >> "$GITHUB_STEP_SUMMARY"
+
+  ci:
+    if: inputs.operation == 'publish'
+    needs: validate
+    uses: ./.github/workflows/validate_pr.yaml
+
+  publish:
+    if: inputs.operation == 'publish'
+    needs: [validate, ci]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - run: python3 -m pip install --disable-pip-version-check -r .github/scripts/requirements.txt
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: '3.13.2'
+      - name: Validate and record sanitized OIDC claims
+        env:
+          EXPECTED_REPOSITORY_ID: ${{ github.repository_id }}
+          EXPECTED_OWNER_ID: ${{ github.repository_owner_id }}
+        run: python3 .github/scripts/cp0_publication.py claims
+      - run: dart pub get
+      - name: Recheck eligibility immediately before the real upload
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 .github/scripts/cp0_publication.py preflight
+      - name: Publish the real release using the recorded OIDC identity
+        run: dart pub publish --force
+      - name: Confirm the published version and record service evidence
+        run: python3 .github/scripts/cp0_publication.py verify-publication
