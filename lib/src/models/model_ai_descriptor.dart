@@ -3,7 +3,9 @@
 // ignore_for_file: avoid_equals_and_hash_code_on_mutable_classes
 
 import '../enums/ai_enums.dart';
+import '../internal/content_values.dart';
 import '../internal/domain_values.dart';
+import 'model_ai_content_capabilities.dart';
 import 'model_ai_requirements.dart';
 import 'model_ai_source.dart';
 
@@ -17,10 +19,20 @@ final class ModelAiDescriptor {
     required Set<EnumAiCapability> capabilities,
     required this.requirements,
     required this.source,
+    this.contentCapabilities,
   }) : capabilities = Set<EnumAiCapability>.unmodifiable(capabilities) {
     requireText(id, 'id');
     requireText(displayName, 'displayName');
     requireText(version, 'version');
+    if (contentCapabilities != null &&
+        this.capabilities.contains(EnumAiCapability.textGeneration) &&
+        !contentCapabilities!.outputModalities.contains(
+          EnumAiOutputModality.text,
+        )) {
+      throw ArgumentError(
+        'contentCapabilities.outputModalities: textGeneration requires text output',
+      );
+    }
     if (this.capabilities.isEmpty) {
       throw ArgumentError.value(
         capabilities,
@@ -46,6 +58,14 @@ final class ModelAiDescriptor {
         readObject(json['requirements'], 'requirements'),
       ),
       source: ModelAiSource.fromJson(readObject(json['source'], 'source')),
+      contentCapabilities: json['contentCapabilities'] == null
+          ? null
+          : decodeAt(
+              'contentCapabilities',
+              () => ModelAiContentCapabilities.fromJson(
+                readObject(json['contentCapabilities'], 'value'),
+              ),
+            ),
     ),
   );
 
@@ -67,6 +87,9 @@ final class ModelAiDescriptor {
   /// Acquisition location and integrity metadata.
   final ModelAiSource source;
 
+  /// Optional model declaration. Null is unknown, not inferred from its name.
+  final ModelAiContentCapabilities? contentCapabilities;
+
   /// Returns independent JSON data with deterministic keys and enum names.
   Map<String, dynamic> toJson() => <String, dynamic>{
     'id': id,
@@ -77,6 +100,7 @@ final class ModelAiDescriptor {
           ..sort()),
     'requirements': requirements.toJson(),
     'source': source.toJson(),
+    'contentCapabilities': contentCapabilities?.toJson(),
   };
 
   /// Copies this value. Omitted nullable fields are preserved; null clears them.
@@ -87,6 +111,7 @@ final class ModelAiDescriptor {
     Set<EnumAiCapability>? capabilities,
     ModelAiRequirements? requirements,
     ModelAiSource? source,
+    Object? contentCapabilities = unset,
   }) => ModelAiDescriptor(
     id: id ?? this.id,
     displayName: displayName ?? this.displayName,
@@ -94,6 +119,10 @@ final class ModelAiDescriptor {
     capabilities: capabilities ?? this.capabilities,
     requirements: requirements ?? this.requirements,
     source: source ?? this.source,
+    contentCapabilities: nullableUpdate(
+      contentCapabilities,
+      this.contentCapabilities,
+    ),
   );
 
   @override
@@ -105,7 +134,8 @@ final class ModelAiDescriptor {
           version == other.version &&
           setEquals(capabilities, other.capabilities) &&
           requirements == other.requirements &&
-          source == other.source;
+          source == other.source &&
+          contentCapabilities == other.contentCapabilities;
 
   @override
   int get hashCode => Object.hashAll(<Object?>[
@@ -115,5 +145,6 @@ final class ModelAiDescriptor {
     Object.hashAllUnordered(capabilities),
     requirements,
     source,
+    contentCapabilities,
   ]);
 }

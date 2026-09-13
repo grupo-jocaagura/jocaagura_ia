@@ -75,6 +75,8 @@ def read_json(url, *, missing_ok=False, token=None):
 
 def publication_state(version, package):
     target = semver(version)
+    if target[2] != 0:
+        raise ValueError("Development patches cannot be promoted directly; prepare a minor or major release first")
     if package is None:
         return "manual_first_publication"
     if not isinstance(package, dict) or package.get("name") != PACKAGE:

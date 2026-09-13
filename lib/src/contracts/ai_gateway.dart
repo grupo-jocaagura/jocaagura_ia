@@ -9,6 +9,8 @@ import 'ai_result.dart';
 abstract interface class AiGateway {
   /// Returns a terminal response or a domain failure.
   /// v0 has no active cancellation control or cancellation finish reason.
+  /// Valid but unsupported content uses unsupportedCapability, never lossy
+  /// coercion or text-only success. Declarations are not runtime certification.
   /// Execution cancellation is deferred to the runtime/streaming contract.
   Future<AiResult<ModelAiResponse>> infer(ModelAiRequest request);
 }

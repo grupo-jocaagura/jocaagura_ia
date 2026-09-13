@@ -1,7 +1,8 @@
 # jocaagura_ai CI/CD
 
 The root package is the SDK-only `jocaagura_ai` domain. Its first manual pub.dev
-release is **0.0.2**; **0.1.0** is the next candidate. The integration consumer
+release is **0.0.2**; develop is at **0.0.3**, and the selected **minor**
+promotion will prepare **0.1.0** in CI. The integration consumer
 `packages/jocaagura_ai_server` remains nonpublishable and excluded by `.pubignore`.
 Release validation needs no running service, model weights or real inference.
 
@@ -17,7 +18,8 @@ combined**, without rounding; `COVERAGE_MIN` may only raise that threshold to
 
 The additional `Release readiness` job runs on PRs to `master`. It requires an
 official `develop -> master` PR, checks the root package identity, SDK-only runtime
-dependencies, stable version and changelog, consults pub.dev, and performs
+dependencies, minor/major release version (patch component zero) and changelog, consults
+pub.dev, and performs
 `dart pub publish --dry-run`. `CI result` requires it to pass for release PRs.
 Other PRs cannot be used to bypass this branch requirement by naming a fork's
 branch `develop`. PR evaluation has no publishing credentials or write access.
@@ -51,37 +53,75 @@ dart run coverage:format_coverage --lcov --in=coverage/raw --out=coverage/lcov.i
 (cd packages/jocaagura_ai_server && dart analyze --fatal-infos --fatal-warnings . && dart test --coverage=coverage/raw)
 python -m pip install -r .github/scripts/requirements.txt
 python -m unittest discover -s .github/scripts/tests -v
-python .github/scripts/release_policy.py
+python .github/scripts/release_policy.py --metadata-only
 dart pub publish --dry-run
 ```
 
 Script tests use Bash (Git for Windows includes it). Use Dart 3.13.2 or a
 compatible newer stable SDK. Update setup-dart steps if the minimum changes.
 
-## Version preparation
+## Development patches and public promotions
 
-The 0.1.0 candidate is prepared in this change. For later releases:
+Patches on `develop` record incremental progress and maintain their own dated
+changelog entries. They are not automatic public releases. A public promotion
+explicitly chooses **minor** or **major**; the patch component becomes zero.
+For the current batch, **0.0.3 -> 0.1.0** is the chosen minor promotion. A major
+promotion from 0.0.3 would instead produce **1.0.0**. The choice is deliberate;
+CI does not infer compatibility from commit messages.
 
-1. Integrate contributions through PRs into `develop`, with notes under
-   `## Unreleased` in `CHANGELOG.md`.
-2. Run `Prepare version` on `develop` with a higher stable `X.Y.Z` and canonical
-   UTF-8 Markdown release notes encoded as Base64. Notes must contain `###`
-   sections without `##` headings. `0.0.0`, prereleases and build suffixes are
-   not accepted for releases.
-3. The workflow runs CI, prepares the version and dated changelog, and creates
-   a GitHub-signed commit on `develop` using an expected-HEAD check. Identical
-   repeated input is a no-op; conflicting notes or concurrent HEAD changes fail.
-   If branch rules prevent that commit, prepare the files via a normal PR into
-   `develop`; do not disable branch protections.
-4. Open a `develop -> master` PR. The release check reports
-   `ready_for_human_tag`, `already_published`, or `manual_first_publication`, or
-   fails with a reason. Merging without a version bump is allowed if the version
-   is already published, but does not create a release.
-5. Merge only after all required checks pass. No tag or publication is created
-   by opening, updating or merging this PR while CP-0 is pending.
+The API confirms that 0.0.3 already exists on pub.dev from the earlier manual
+flow. Do not upload it again. The new automated publication policy rejects patch
+versions, including already-published patches, and requires preparation of a
+minor/major version before a PR can promote to `master`.
 
-The preparation commit uses `GITHUB_TOKEN`; its push does not automatically
-start another CI run. The integration PR and the human-pushed tag run CI again.
+### Prepare the next promotion in GitHub Actions
+
+1. Merge this implementation PR into `develop`; its workflow must exist on that
+   default branch before GitHub allows dispatch.
+2. Open **Prepare promotion**, select `develop`, enter `from_version: 0.0.3`,
+   and choose `bump: minor`. CI calculates **0.1.0**. For later promotions,
+   explicitly supply the development version and select minor or major.
+3. The planner groups `Unreleased` and patch entries since the latest preceding
+   `X.Y.0` promotion. It preserves Added/Changed/Fixed/etc. sections and labels
+   each contribution with its original version. Here it collects **0.0.1,
+   0.0.2 and 0.0.3**, plus pending release/Dartdoc changes. Previous promotion
+   contents are not duplicated into later promotions; major promotions use the
+   same boundary. Historical changelog blocks are never deleted or rewritten.
+4. The workflow stores a reviewable notes/plan artifact, checks that its commit
+   matches the dispatch commit, and calls the existing **Prepare version** flow.
+   That flow runs full CI, checks the expected develop HEAD, prepares the version
+   and dated consolidated changelog, clears `Unreleased`, and creates a
+   GitHub-signed commit. The existing expected-HEAD API write also prevents
+   overwriting concurrent work after validation.
+5. If develop moved during planning/CI, dispatch again with the same source
+   version after reviewing the change. Repeating the same dispatch inputs after
+   preparation recognizes 0.1.0 and performs an idempotent no-op; it never bumps
+   blindly to 0.2.0. New Unreleased contributions after preparation require review.
+6. Open the release PR **develop -> master** only after version preparation.
+   `Release readiness` rejects direct patch promotion and reports eligibility
+   for the prepared minor/major version. It checks the version, changelog,
+   repository identity and publication dry run alongside all existing CI gates.
+7. CP-0 must pass before post-merge publication orchestration is implemented.
+   Until then, merging a PR does not create a tag or publish. The documented
+   human-tag fallback is available for a deliberately prepared release.
+
+`Prepare version` remains the lower-level entry point for recording development
+versions with an explicit version and canonical Base64 notes. Use **Prepare
+promotion** for the public minor/major bump and automatic note consolidation.
+If branch rules prevent the version commit, prepare the generated version/notes
+through a normal PR into develop; do not weaken protections. The version commit
+uses `GITHUB_TOKEN`, so its push does not start another CI run automatically;
+the release PR and eventual human-pushed tag run CI again.
+
+A local read-only preview of the exact promotion planner is:
+
+```sh
+python .github/scripts/prepare_promotion.py --from-version 0.0.3 --bump minor --output-dir .dart_tool/promotion-preview
+```
+
+The preview produces `plan.json` and `notes.md`, without changing package files,
+creating a tag, committing, or uploading to pub.dev. The version bump occurs in
+CI after this PR reaches develop; this PR therefore retains `version: 0.0.3`.
 
 ## CP-0 and publishing
 
@@ -106,8 +146,10 @@ The supported fallback is a human-pushed tag. Once the release PR has merged:
    list: it must contain `lib/jocaagura_ai.dart`, the root example, README,
    changelog and license; it must exclude `packages/`, models, native runtimes,
    private config, and build/test reports.
-4. Create `v0.1.0` on that exact commit and push that tag explicitly as a human
-   maintainer. Substitute the deliberately prepared version for future releases.
+4. For a genuinely unpublished, deliberately prepared version, create its
+   `vX.Y.0` tag on that exact commit and push the tag explicitly as a human
+   maintainer. Version 0.0.3 already exists: do not create or repoint its tag to
+   imply that new unshipped changes belong to its published archive.
    If the tag exists, verify its peeled commit; never overwrite or re-create it
    to recover a failed release. No automation creates release tags in this stage.
 5. `Publish package` verifies the human push event, tag/version/changelog, exact
@@ -118,15 +160,15 @@ The supported fallback is a human-pushed tag. Once the release PR has merged:
 
 A 404 for the entire package yields `manual_first_publication`; a tag run then
 stops. Authentication errors, network errors, malformed responses and server
-failures block publishing. Existing versions skip upload; a candidate older
+failures block publishing. Existing minor/major versions skip upload; a candidate older
 than another published stable version is rejected, even if previously published.
 Only an exact merged official `develop -> master` commit may be released;
 an arbitrary ancestor of `master` is insufficient.
 
-### Recovery and the already-published first version
+### Recovery and already-published versions
 
-- `0.0.2` has already been published manually. Do not publish it again, fabricate
-  a merge provenance for it, or repoint a historical tag. Review the original
+- `0.0.2` and `0.0.3` are already published. Do not publish them again, fabricate
+  merge provenance, or repoint a historical tag. Review the original
   validated commit separately if historical release metadata is needed.
 - If publication fails ambiguously, rerun the **entire workflow** so eligibility
   queries pub.dev again before uploading. A full rerun of a successfully
@@ -148,11 +190,11 @@ The 150/160 repository-mismatch report belongs to the different published
 `jocaagura_ia` package. Do not rename the canonical package to address that old
 report. Keep `name: jocaagura_ai`, its public entrypoint and imports unchanged.
 
-The current `jocaagura_ai` analysis log still reports an unresolved Dartdoc
-reference for `[0, 1]`. This release escapes that mathematical interval as code.
-Regenerating Dartdoc must report zero warnings and errors. The uploaded 0.0.2
-archive cannot be edited; the documentation correction will reach pub.dev in
-0.1.0 after publication and analysis. Do not claim to have increased points that
+The analysis log inspected during initial discovery reported an unresolved
+Dartdoc reference for `[0, 1]`. This PR escapes that interval as code. Regenerating
+Dartdoc must report zero warnings and errors. Published archives cannot be edited;
+the correction remains under `Unreleased` and will reach pub.dev in a future
+unpublished version selected by the maintainer. Do not claim to have increased points that
 were already at their maximum.
 
 References: [Dart publishing](https://dart.dev/tools/pub/automated-publishing),

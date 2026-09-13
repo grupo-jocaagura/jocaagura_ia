@@ -73,6 +73,38 @@ void main() {
     expect(calls, isEmpty);
   });
 
+  test('legacy textual JSON remains readable and canonical parts preserve the request', () async {
+    final ModelAiRequest original = smokeRequest();
+    final Map<String, dynamic> legacy = original.toJson()
+      ..['messages'] = <Map<String, dynamic>>[
+        <String, dynamic>{'role': 'user', 'content': 'Respond only with OK'},
+      ];
+    expect((await handler(request(jsonEncode(legacy)))).statusCode, 200);
+    expect(
+      (await handler(request(jsonEncode(original.toJson())))).statusCode,
+      200,
+    );
+    expect(calls, <ModelAiRequest>[original, original]);
+    final Map<String, dynamic> invalid = original.toJson()
+      ..['messages'] = <Map<String, dynamic>>[
+        <String, dynamic>{
+          'role': 'user',
+          'parts': <Map<String, dynamic>>[
+            <String, dynamic>{
+              'type': 'image',
+              'mimeType': 'image/png',
+              'source': <String, dynamic>{
+                'type': 'inlineBytes',
+                'bytesBase64': 'invalid!',
+              },
+            },
+          ],
+        },
+      ];
+    expect((await handler(request(jsonEncode(invalid)))).statusCode, 400);
+    expect(calls, hasLength(2));
+  });
+
   test('bounds streamed body before decoding', () async {
     final Response response = await handler(
       request(

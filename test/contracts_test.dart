@@ -175,7 +175,7 @@ void main() {
       requestId: 'r',
       modelId: model.id,
       messages: <ModelAiMessage>[
-        ModelAiMessage(role: EnumAiMessageRole.user, content: 'OK'),
+        ModelAiMessage.text(role: EnumAiMessageRole.user, text: 'OK'),
       ],
     );
     expect(

@@ -2,6 +2,7 @@
 // The annotation-based lint requires package:meta; the domain is SDK-only.
 // ignore_for_file: avoid_equals_and_hash_code_on_mutable_classes
 
+import '../internal/content_values.dart';
 import '../internal/domain_values.dart';
 import 'model_ai_generation_options.dart';
 import 'model_ai_message.dart';
@@ -32,12 +33,14 @@ final class ModelAiRequest {
     () => ModelAiRequest(
       requestId: readString(json['requestId'], 'requestId'),
       modelId: readString(json['modelId'], 'modelId'),
-      messages: readList(json['messages'], 'messages')
-          .map(
-            (Object? value) =>
-                ModelAiMessage.fromJson(readObject(value, 'messages')),
-          )
-          .toList(),
+      messages: decodeAt(
+        'messages',
+        () => readContentList(
+          json['messages'],
+          (Object? value) =>
+              ModelAiMessage.fromJson(readObject(value, 'value')),
+        ),
+      ),
       options: ModelAiGenerationOptions.fromJson(
         readObject(json['options'], 'options'),
       ),

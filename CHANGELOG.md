@@ -14,14 +14,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-## [0.1.0] - 2026-09-12
-
 ### Fixed
 
 - Escape the progress interval in Dartdoc so it is not treated as a link
   (issue #8).
 
 ### Added
+
+- Prepare explicit minor/major promotions in CI, consolidating Unreleased notes
+  and development patches since the previous promotion without deleting history.
+- Require public release versions to end in `.0`; development patches cannot
+  be published through the automated release route.
 
 - Validate release PR provenance, package identity, changelog and pub.dev version
   eligibility before integration into `master`.
@@ -30,10 +33,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Record CP-0 evidence and keep automatic post-merge orchestration unimplemented
   until tag-ref workflow dispatch is verified against the live pub.dev settings.
 
+## [0.0.3] - 2026-09-13
+
+### Added
+
+- Add immutable ordered text/image input parts, inline-byte and lexical local-file
+  content sources, canonical JSON, descriptive string metadata and pure validation.
+- Add directional model/backend content declarations and a pure compatibility
+  assessment distinguishing unsupported, undetermined and meeting declarations.
+  Null allowlists mean unknown; null maxima impose no declared bound.
+
 ### Changed
 
-- Prepare the SDK-only domain for 0.1.0; the separate inference server, model
-  resources and native runtime remain outside the root package archive.
+- Migrate `ModelAiMessage` from `content` to `parts` (breaking Dart API and JSON
+  writer change). Read legacy textual JSON; write only parts; reject both keys.
+  Provide explicit single-text construction without lossy mixed-content getters.
+- Add optional descriptor content capabilities without inferring runtime support.
+- Companion consumer migration: retain the server's textual behavior and reject
+  images/multipart input before resource access. No image inference is implemented.
 
 ## [0.0.2] - 2026-09-12
 

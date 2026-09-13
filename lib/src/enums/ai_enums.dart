@@ -4,6 +4,22 @@ enum EnumAiMessageRole { system, user, assistant }
 /// Capabilities with a defined public domain contract.
 enum EnumAiCapability { textGeneration }
 
+/// Representable inputs, not certified runtime support.
+enum EnumAiInputModality { text, image }
+
+/// Generated output is textual in this extension.
+enum EnumAiOutputModality { text }
+
+/// Input content sources, distinct from model artifact acquisition.
+enum EnumAiContentSourceType { inlineBytes, localFile }
+
+/// Declaration assessment only, never evidence of successful execution.
+enum EnumAiContentCompatibilityStatus {
+  meetsDeclaredConstraints,
+  unsupported,
+  undetermined,
+}
+
 /// How model resources are acquired, not where inference executes.
 enum EnumAiSourceType { localFile, bundledAsset, remoteDownload }
 
